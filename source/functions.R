@@ -246,6 +246,7 @@ phase.select <-
       p0 <- length(model.0$alpha) ; p1 <- length(model.1$alpha)
       # degrees of freedom
       if (type == 1 ) df <- p1^2 + p1 - p0^2 - p0
+      else if (type == 2) df <- 2 * (p1 - p0)
       else if (type == 4) df <- 2 * (p1 - p0)
       else if (type == 5) df <- 3 * (p1 - p0)
       else stop("not available distribution type")
@@ -271,7 +272,7 @@ phase.select <-
       cat("   optimal number of phases : ", p, "(p.value =", p.value, ")\n") 
     else
       cat("number of phase have reached to maximum : ", max.phase, "\n")  
-  
+    
     return(model.0)    
     
   }
@@ -319,23 +320,36 @@ ph.curvefit <-
 ## drawing qqplot with fitted PH-family distribution 
 #. insert fitted result of EMpht() or phase.select()
 #. calculating parametric qunatiles consume significant time...
+#. print AIC and BIC
 ph.qqplot <-
   
   function(fit, ...) {
     
-    x = fit$data
-    m <- length(x) + 2
+    y <- fit$data ;  n <- length(y) 
+    type <- fit$dist.type ; p <- length(fit$alpha)
+    x0 <- c(1:n)/(n+1)
     
     # save qqplot
     if (fit$log.trans) {
-      theo <- qscaled.logph(seq(from = 0, to = 1, length.out = m)[-c(1,m)],
-        prob = fit$alpha, rates = fit$T, c = fit$c)
+      x <- do.call("qscaled.logph", list(x0, prob = fit$alpha, rates = fit$T, c = fit$c))
+      loglik <- sum(log(dscaled.logph(y, prob = fit$alpha, rates = fit$T, c = fit$c)))
     } else {
-      theo <- qphtype(seq(from = 0, to = 1, length.out = m)[-c(1,m)],
-        prob = fit$alpha, rates = fit$T)
+      x <- do.call("qphtype", list(x0, prob = fit$alpha, rates = fit$T))
+      loglik <- sum(log(dphtype(y, prob = fit$alpha, rates = fit$T)))
     } 
     
-    qqplot(theo, x, xlab = "Theoretical values", ylab = "Observed samples",
+    # number of parameters 
+    if (type == dists[1,]) k <- p + p^2
+    else if (type == dists[2,])  k <- p * 2
+    else if (type == dists[4,]) k <- p * 2 - 1
+    else if (type == dists[5,]) k <- p * 3 - 1
+    
+    # AIC & BIC
+    AIC <- 2*k - 2*loglik
+    BIC <- k * log(n) - 2*loglik
+    print(c(AIC = AIC, BIC = BIC))
+    
+    qqplot(x, y, xlab = "Theoretical values", ylab = "Observed samples",
       main = "Q-Q plot", ...)
     abline(0, 1, col = 2, lty = 2)
     
@@ -346,10 +360,10 @@ ph.qqplot <-
 get.station.data <- 
   
   function(stationid) {
-  
-  fread(paste(FILE.DIR, stationid, ".dly", sep = "")) %>% unlist(., use.names = FALSE)
-  
-}
+    
+    fread(paste(FILE.DIR, stationid, ".dly", sep = "")) %>% unlist(., use.names = FALSE)
+    
+  }
 
 
 ###################################################################################################
@@ -378,45 +392,48 @@ general.qqplot <-
       stop("invalid model name")
     
     if (model == "exponential") {
-    
-      x <- do.call("qexp", list(x0, rate = 1/mean(y)))
+      
+      x <- do.call("qexp", list(x0, rate = 1/mean(y))) ; k <- 1
       loglik <- sum(log(dexp(y, rate = 1/mean(y))))
-    
+      
     } else if (model == "gamma") {
       
-      fit <- MASS::fitdistr(y, 'gamma')
+      fit <- MASS::fitdistr(y, 'gamma') ; k <- 2
       par.ests <- fit$estimate
       x <- do.call("qgamma", list(x0, shape = par.ests[1], rate = par.ests[2]))
       loglik <- sum(log(dgamma(y, shape = par.ests[1], rate = par.ests[2])))
       
     } else if (model == "GG") {
       
-      fit <- gamlssML(y, family = 'GG', ...)
+      fit <- gamlssML(y, family = 'GG', ...) ; k <- 3
       x <- do.call("qGG", list(x0, mu = fit$mu, sigma = fit$sigma, nu = fit$nu))
       loglik <- sum(log(dGG(y, mu = fit$mu, sigma = fit$sigma, nu = fit$nu)))
       
     } else if (model == "GB2") {
       
-      fit <- gamlss::gamlssML(y, family = "GB2", ...)
+      fit <- gamlss::gamlssML(y, family = "GB2", ...) ; k <- 4
       x <- do.call("qGB2", list(x0, mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau))
       loglik <- sum(log(dGB2(y, mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau)))
       
     } else if (model == "FK08") {
       
       # dynamic input for theta? 
-      fit <- FK08(y, ...)
+      fit <- FK08(y, ...) ; k <- 4
       x <- do.call("qFK08", list(x0, fit))
       loglik <- sum(log(dFK08(y, fit)))
       
     } else if (model == "HEG") {
       
-      fit <- HEG(y, ...)
+      fit <- HEG(y, ...) ; k <- 3
       x <- do.call("qHEG", list(x0, fit))
       loglik <- - HEG_nLL(mu = fit@coef[1], xi = fit@coef[2], sigma = fit@coef[3])
-        
+      
     }
     
-    print(loglik)
+    AIC <- 2*k - 2*loglik
+    BIC <- k * log(n) - 2*loglik
+    
+    print(c(AIC = AIC, BIC = BIC))
     # plotting  
     qqplot(x, y, xlab = "Theoretical Quantiles", ylab = "Ordered Sample", xlim = c(0, max(y)),
       main = paste("Model : ", model, sep = ""))
@@ -479,7 +496,7 @@ dFK08 <-
     
     c(dgamma(x[x <= theta], shape = FK08_par[1], rate = FK08_par[2]), 
       (1 - pgamma(theta, shape = FK08_par[1], rate = FK08_par[2])) * 
-      dgpd(x[x > theta], xi = FK08_par[3], beta = FK08_par[4], mu = theta))
+        dgpd(x[x > theta], xi = FK08_par[3], beta = FK08_par[4], mu = theta))
     
   }
 
@@ -496,7 +513,7 @@ pFK08 <-
     over_theta <- pgamma(theta, shape = fit$par.ests[1], rate = fit$par.ests[2]) +
       pgpd(q[which(q > theta)], xi = fit$par.ests[3], beta = fit$par.ests[4], mu = theta) * 
       (1 - pgamma(theta, shape = fit$par.ests[1], rate = fit$par.ests[2]))
-      
+    
     c(under_theta, over_theta)
     
   }
@@ -516,8 +533,8 @@ qFK08 <-
     under_theta <- qgamma(p[which(p <= F_gamma_theta)], shape = FK08_par[1], rate = FK08_par[2])
     over_theta <- qgpd((p[which(p > F_gamma_theta)] - F_gamma_theta)/(1 - F_gamma_theta),
       xi = FK08_par[3], beta = FK08_par[4], mu = theta) 
-      
-     
+    
+    
     c(under_theta, over_theta)
   }
 
@@ -546,7 +563,7 @@ HEG_nLL <- function(mu, xi, sigma) {
 HEG <- 
   
   function(y, start = list(mu = 0.1, xi = 0.2, sigma = 2)) {
-
+    
     stats4::mle(HEG_nLL, start)
     
   }
@@ -561,7 +578,7 @@ pHEG <-
     
     c(pexp(q[which(q <= theta)], rate = 1/mu),
       pexp(theta, 1/mu) + pgpd(q[which(q > theta)], xi = xi, beta = sigma, mu = theta)) / Z
-      
+    
   }
 
 
@@ -587,6 +604,4 @@ qHEG <-
 ###################################################################################################
 ### 4. 
 ###################################################################################################
-
-
 
