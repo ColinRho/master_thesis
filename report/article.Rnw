@@ -1,0 +1,68 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{color}
+\usepackage{titlesec}
+\titlelabel{\thetitle.\quad}
+\newcommand{\cred}{ \color{red}}
+\newcommand{\cgreen}{\color{green}}
+\newcommand{\cblue}{\color{blue}}
+\newcommand{\cmag}{\color{magenta}}
+\newcommand{\bn}{\begin{enumerate}}
+\newcommand{\en}{\end{enumerate}}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+\newcommand{\by}{\begin{eqnarray*}}
+\newcommand{\ey}{\end{eqnarray*}}
+\renewcommand{\labelenumi}{(\alph{enumi}) }
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+%
+\usepackage[margin=2.2cm, includehead]{geometry}% see geometry.pdf on how to lay out the page. There's lots.
+\geometry{letterpaper} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+%\bibpunct{(}{)}{;}{a}{,}{,}
+%\setlength{\textwidth}{16cm}
+%\setlength{\textheight}{21cm}
+
+\newcounter{parnum}
+\newcommand{\N}{%
+  \noindent\refstepcounter{parnum}%
+   \makebox[\parindent][l]{\textbf{[\arabic{parnum}]}}\quad  }
+% Use a generous paragraph indent so numbers can be fit inside the
+% indentation space.
+\setlength{\parindent}{1.5em}
+
+% See the ``Article customise'' template for come common customisations
+
+
+\begin{document}
+
+\title{Modelling the entire range of daily precipitation using mixture distributions}
+\author{Hyunwoo Rho}
+\date{}
+
+\maketitle
+
+\section{Introduction}
+
+
+\section{Existing models}
+
+
+\section{Phase-type distribution class}
+
+\section{USHCN Texas daily precipitation data set}
+
+\section{World data}
+
+\section{Conclusion}
+
+
+
+\end{document}
