@@ -1,3 +1,5 @@
+%%% thesis
+
 \documentclass[12pt]{article}
 \usepackage{amsmath}
 \usepackage{natbib}
@@ -40,6 +42,17 @@
 
 % See the ``Article customise'' template for come common customisations
 
+<<setup, cache=FALSE, echo=FALSE>>=
+library(knitr)
+opts_knit$set(root.dir = normalizePath('../'))
+opts_chunk$set(cache = TRUE, autodep = TRUE)
+@
+
+<<loading, cache=TRUE, echo=FALSE>>=
+load("data/ushcn.RData")
+load("data/precedent.RData")
+source("source/functions.R")
+@
 
 \begin{document}
 
@@ -54,22 +67,86 @@
 \section{Introduction}
 %========================
 
-In hydrological study,  \cite{li2012simulation}
+
+To measure and predict the precipitation are the most oldest concerns of mankind. It is an essential factor in agriculture, forest management, hydrology, and preparing for disasters like flood and drought. For generating stochastic precipitaion model, there are some feasible time intervals as a base period of modelling, but taking a daily basis is considerably natural \cite{richardson1981stochastic}. Constructing daily stochastic precipitaion model can be extended to precipitation analytics like monthly or yearly basis approach and spatial analysis. 
 
 
+Many of previous studies tried to model daily rainfall data through parametric approaches e.g. \cite{ison1971wet, mielke1973three, richardson1981stochastic, stern1984model} and also non-parameteric approaches e.g. \cite{sharma1999nonparametric, harrold2003nonparametric}Along some studies in hydrology community, the evidence of heavy-tailed phenomenon on the distribution of high precipitation amount \cite{koutsoyiannis2004statistics}. In this perspective, various methods were introduced more focused on tail behavior of daily precipitation \cite{furrer2008improving, li2012simulation, papalexiou2012entropy, papalexiou2013extreme}. 
+
+
+In this paper, we compare various type of parametric models and introdcue a particular type of mixture distribution called phase-type distribution. Through this model we tried to fit the whole range of continuous daily precipitation.
+
+
+%%%
+%========================
+\section{Data Sets}
+%========================
+
+
+The main data set used to analyse is United States Historical Climatology Network(USHCN) Daily data set. Raw data set contains daily record of precipitation, snowfall, snow depth, maximum temperature, minumum temperature, and information about flag. Among 48 files of each sontiguous states, According as \cite{li2012simulation}, Texas was selected. For following their work, the same data selection criteria were adopted which are all nonzero precipation of 1940 to 2009 without taking care of missings. 
+
+
+Additionally, Daily Global Historical Climatology Network(GHCN-DAILY) was used to do extra analyses \cite{papalexiou2012entropy, papalexiou2013extreme} which has identical data format with USHCN. This set contains about 100 thousand stations and also encompasses USHCN as its subset. By filtering stations along \cite{papalexiou2013extreme}, (a) record length of over 50 years, (b) percentage of missing values less than 20\%, data assigned with suspicious "quality flags" less than 0.1\%. The screen values of quality flags are two, one with "G"(failed gap check), and another with "X"(failed bound check). For more information about data set, see \cite{menne2012overview}. 
+
+
+Finally we handled 49 stations in USHCN-Texas data, and 19328 stations in GHCN data after filtering. 
+
+
+%%%
+%========================
 \section{Existing models}
+%========================
 
-\subsection{Mixture models}
+	\subsection{One component models}
 
-\subsection{Hybrid models} 
 
+Fundamental characteristrics of daily precipitation data are described as follows; non-negative, continuous except at the spike on zero, right-skewed. Assuming we only focus on the continuous part of the data, such distributions include exponential \cite{todorovic1975stochastic}, gamma \cite{ison1971wet, wilks1999interannual, schoof2010development}, and kappa \cite{mielke1973three}, and so on. 
+
+\begin{equation}
+\label{exponentail.pdf} 
+f(x ; \theta) = \theta e^{-\theta x}, \quad x \geq 0, \theta > 0,
+\end{equation}
+
+
+
+	\subsection{Mixture models}
+
+
+	\subsection{Hybrid models} 
+
+
+
+
+
+%%%
+%========================
 \section{Phase-type distribution class}
+%========================
 
+
+
+
+%%%
+%========================
 \section{USHCN Texas daily precipitation data set}
+%========================
 
+
+
+
+
+%%%
+%========================
 \section{World data}
+%========================
 
+
+
+%%%
+%========================
 \section{Conclusion}
+%========================
+
 
 %following selects the referencing style
 \bibliographystyle{./natbib}
