@@ -297,7 +297,7 @@ ph.curvefit <-
       curve(dphtype(x, prob = fit$alpha, rates = fit$T), add = TRUE, lwd = 2)
       
       fit$data %>% hist(main = "Original data(Scaled LogPH)", probability = T, breaks = 50, ...)
-      x <- seq(from = 0, to = max(vec), length.out = 1000)
+      x <- seq(from = 0, to = max(v), length.out = 1000)
       curve(dscaled.logph(x, prob = fit$alpha, rates = fit$T, c = fit$c),  add = T, lwd = 2)
       legend('topright', legend = leg.box, box.col = "white")
       
@@ -388,7 +388,7 @@ general.qqplot <-
     # theoretical quantile
     x0 <- c(1:n)/(n+1)
     
-    if(!(model %in% c("exponential", "gamma", "GG", "GB2", "FK08", "HEG")))
+    if(!(model %in% c("exponential", "gamma", "kappa", "GG", "GB2", "FK08", "HEG")))
       stop("invalid model name")
     
     if (model == "exponential") {
@@ -402,6 +402,12 @@ general.qqplot <-
       par.ests <- fit$estimate
       x <- do.call("qgamma", list(x0, shape = par.ests[1], rate = par.ests[2]))
       loglik <- sum(log(dgamma(y, shape = par.ests[1], rate = par.ests[2])))
+    
+    } else if (model == "kappa") {
+      
+      fit <- fit.kappa(y, ...) ; k <- 3
+      x <- do.call("qkappa", list(x0, alpha = fit@coef[1], beta = fit@coef[2], theta = fit@coef[3]))
+      loglik <- sum(log(dkappa(y, alpha = fit@coef[1], beta = fit@coef[2], theta = fit@coef[3])))
       
     } else if (model == "GG") {
       
@@ -449,6 +455,50 @@ general.qqplot <-
 #.
 #.
 
+## Kappa, Mielke, 1973
+
+
+kappa_nLL <- function(alpha, beta, theta) {
+  
+  n <- length(y)
+  - ( n * log((alpha*theta)/beta) + (theta - 1) * sum(log(y/beta)) - ((alpha + 1) / alpha) * 
+    sum(log(alpha + (y/beta)^(alpha * theta))) )
+  
+}
+
+#. fitting 3-parameter kappa distribution via ML method
+fit.kappa <- 
+  
+  function(y, start = list(alpha = 1, beta = 1, theta = 1)) {
+  
+  stats4::mle(kappa_nLL, start = list(alpha = 1, beta = 1, theta = 1), lower = c(0, 0, 0), method = "L-BFGS-B")
+  
+  }
+
+#. density, probability, quantile function of kappa
+dkappa <- 
+  
+  function(x, alpha, beta, theta) {
+  
+  (alpha * theta / beta) * (x / beta)^(theta - 1) * 1 / (alpha + (x / beta)^(alpha * theta))^(1 + 1/alpha)
+  
+  }
+
+pkappa <- 
+  
+  function(q, alpha, beta, theta) {
+  
+  ((q / beta)^(alpha * theta) / (alpha + (q / beta)^(alpha * theta)))^(1/alpha)
+
+  }  
+
+qkappa <- 
+  
+  function(p, alpha, beta, theta) {
+  
+  beta / ( (1/p^alpha - 1) / alpha)^(1/(alpha * theta))
+  
+  }
 
 
 ## FK08 
