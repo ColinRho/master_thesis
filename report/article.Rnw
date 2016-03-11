@@ -1,14 +1,15 @@
 %%% thesis
-
 \documentclass[12pt]{article}
-\usepackage{amsmath}
+\usepackage[fleqn]{amsmath}
+\usepackage{booktabs}
+\usepackage{longtable}
 \usepackage{natbib}
 \usepackage{graphicx}
+  \graphicspath{{../plot/}}
 \usepackage{amssymb}
 \usepackage{epstopdf}
 \usepackage{color}
 \usepackage{titlesec}
-\titlelabel{\thetitle.\quad}
 \newcommand{\cred}{ \color{red}}
 \newcommand{\cgreen}{\color{green}}
 \newcommand{\cblue}{\color{blue}}
@@ -45,14 +46,14 @@
 <<setup, cache=FALSE, echo=FALSE>>=
 library(knitr)
 opts_knit$set(root.dir = normalizePath('../'))
-opts_chunk$set(cache = TRUE, autodep = TRUE)
+opts_chunk$set(cache = TRUE, autodep = TRUE, echo = FALSE, results='asis')
 @
 
 <<loading, cache=TRUE, echo=FALSE>>=
-load("data/ushcn.RData")
-load("data/precedent.RData")
 source("source/functions.R")
+load("data/precedent.RData")
 @
+
 
 \begin{document}
 
@@ -61,6 +62,8 @@ source("source/functions.R")
 \date{}
 
 \maketitle
+
+\titlelabel{\thetitle.\quad}
 
 %%%
 %========================
@@ -91,6 +94,18 @@ Additionally, Daily Global Historical Climatology Network(GHCN-DAILY) was used t
 
 Finally we handled 49 stations in USHCN-Texas data, and 19328 stations in GHCN data after filtering. 
 
+<<tx summary, include=FALSE>>=
+summary_stations <- sapply(1:49, function(x) {
+  
+  y = by_station(ID = x) 
+  summary(y)
+  
+})
+
+dat <- cbind.data.frame(ID = unique(tidy.ushcn.tx[["COOP_ID"]]),
+  Label = paste("ID", 1:49, sep = ""),
+  t(summary_stations))
+@
 
 %%%
 %========================
@@ -100,23 +115,77 @@ Finally we handled 49 stations in USHCN-Texas data, and 19328 stations in GHCN d
 	\subsection{One component models}
 
 
-Fundamental characteristrics of daily precipitation data are described as follows; non-negative, continuous except at the spike on zero, right-skewed. Assuming we only focus on the continuous part of the data, such distributions include exponential \cite{todorovic1975stochastic}, gamma \cite{ison1971wet, wilks1999interannual, schoof2010development}, and kappa \cite{mielke1973three}, and so on. 
+Fundamental characteristrics of daily precipitation data are described as follows; non-negative, continuous except at the spike on zero, right-skewed. Assuming we only focus on the continuous part of the data, such distributions include exponential \cite{todorovic1975stochastic}, gamma \cite{ison1971wet, wilks1999interannual, schoof2010development}, and kappa \cite{mielke1973three}, and so on. Let $X$ denote the nonzero daily precipitation amount, then each models can be presented as their probabilty density functions as below. 
+
 
 \begin{equation}
-\label{exponentail.pdf} 
-f(x ; \theta) = \theta e^{-\theta x}, \quad x \geq 0, \theta > 0,
+  \label{exponential.pdf} 
+  f(x ; \lambda) = \frac{1} {\lambda} e^{-x / \lambda}, \quad x \geq 0, \quad \lambda > 0,
 \end{equation}
 
 
-
-	\subsection{Mixture models}
-
-
-	\subsection{Hybrid models} 
-
+\begin{equation}
+  \label{gamma.pdf} 
+  f(x ; \alpha, \beta) = \frac {1} {\beta^\alpha \Gamma(\alpha)} x^{\alpha - 1} e^{-x/\beta} , \quad x \geq 0, \quad \theta > 0,
+\end{equation}
 
 
+\begin{equation}
+  \label{kappa.pdf} 
+  f(x ; \alpha, \beta, \theta) = \frac {\alpha \theta} {\beta} (\frac {x} {\beta})^{\theta - 1} [\alpha + (\frac {x} {\beta})^{\alpha \theta}]^{-\frac {\alpha + 1} {\alpha}}, \quad x > 0, \quad \alpha, \beta, \theta > 0,
+\end{equation}
 
+Other distributions like skewed-normal \cite{wan2005stochastic}, truncated power of normal distribution \cite{bardossy1992space}, and only for the tail of data, genralized Pareto distribution \cite{} were introduced. To avoid crowded model comparison and to aim our goal fitting the whole range of the data, we are going to consider only three models of one component model above. Additionally, each of distributions represent one, two, and three parameter model respectively.
+
+<<sample histogram, echo = FALSE, fig.height=4, fig.width=5, fig.cap = "sample histrogram">>=
+random_id <- 2
+y = by_station(random_id)
+hist(y, probability = TRUE, breaks = 60, main = "", xlab = "Precipitation (mm)")
+summ <- summary(y) ; nm <- names(summ)
+legend('topright', legend = paste(nm, summ, sep = " "), title = paste("ID", random_id,
+  sep = ""), box.col = "white")
+@
+
+
+	\subsection{Two-componenet models} 
+
+
+Most general way to combine two distributions is to using mixture distribution. Mixed exponenetial could be a typical case. 
+
+\begin{equation}
+  \label{mixed_exp.pdf}
+  f(x ; \omega, \lambda_1, \lambda_2) = \frac {\omega} {\lambda_1} e^{-x/\lambda_1} + \frac {1-\omega} {\lambda_2} e^{-x/\lambda_2}, \quad x > 0, \quad \lambda_1, \lambda_2 > 0, \quad \omega \in [0,1], 
+\end{equation}
+
+Alternatively, hybrid model could be considered, which is a distribution combining two different distributions at particular threshold. These hybrid approaches have more attention on the extreme value of daily rainfall by adopting heavy-tailed distribution in the tail part, like generalized Pareto, because some researches find out it has heavy tail behavior \cite{koutsoyiannis2004statistics}. From the precedent studies, the performance of hybrid models defeat the one of mixture models in genereal \cite{li2012simulation, furrer2008improving}. Hence, we mainly cover the hybrid models to be compared rather than other mixture distributions. 
+
+\begin{equation}
+  \label{gamma_gp_hybrid.pdf}
+  f(x ; \alpha, \beta, \xi, \sigma, \theta) = f_{gamma}(x ; \alpha, \beta) I(x \leq \theta) + [1-F_{gamma}(\theta ; \alpha, \beta)] f_{GP}(x ; \xi, \sigma, \theta) I(x > \theta)
+\end{equation}
+
+At the threshold $\theta$, to make it continuous, a constraint $f(\theta-) = f(\theta+)$ is needed, which yields that the scale parameter $\sigma$ of generalized Pareto distribution is expressed as the reciprocal of the gamma hazard funciton, 
+
+\begin{equation}
+  \label{sigma_expression}
+  \sigma = \frac {1 - F_{gamma}(\theta ; \alpha, \beta)} {f_{gamma}(\theta ; \alpha, \beta)}
+\end{equation}
+
+Thus the number of paramters in this model reduces from five to four. But still the selection problem of the threshold $theta$ remains without any guaranteed selection method. To pass away such huddle, \cite{li2012simulation} sugested another type of hybrid model, combination of exponential and generalized Pareto distributions.
+
+\begin{equation}
+  \label{exponential_gp_hybrid.pdf}
+  f(x ; \lambda, \xi, \sigma, \theta) = \frac {1} {1 + F_{exp}(\theta ; \lambda)} [f_{exp}(x ; \lambda) I(x \leq \theta) + f_{GP}(x ;  \xi, \sigma, \theta) I(x > \theta)]
+\end{equation}
+
+With same constraint above, $f(\theta-) = f(\theta+)$, the number of parameters can be reduced again. 
+
+\begin{equation}
+  \label{theta_expression}
+  \theta = -\lambda \ln{\frac {\lambda} {\sigma}}
+\end{equation}
+
+Especially this model outstands by deriving the threshold $\theta$ analytically.
 
 %%%
 %========================
@@ -131,7 +200,32 @@ f(x ; \theta) = \theta e^{-\theta x}, \quad x \geq 0, \theta > 0,
 \section{USHCN Texas daily precipitation data set}
 %========================
 
+From \cite{li2012simulation}, various kind of models were used to fit each stations of USHCN Texas daily precipitation data set. We chose five models among them to compare with PH model; Exponential, Gamma, kappa, hybrid of gamma and generalized Pareto(GGP), hybrid of exponential and generalized Pareto(EGP). 
 
+For GGP model, its performance is affected by the choice of threshold value. Too large threshold would estimate its tail short by taking large emphasis on gamma distribution. Otherwise too small threshold set large emphasis on genralized Pareto and estimate its tail heavy. Thus we set threshold value used in GGP model moderately as 60\% quantile of each sample.
+
+Overall, single component models; exponential, gamma, kappa, show inferior performances than other multi component models. With particular sample station(ID2), Exponential and gamma model underestimate tail thickness, besides kappa model overestimates it. Even with any other stations, gamma tends to exhibit short tail and kappa tends to exhibit heavy tail. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width = 15cm]{QQplots_ID2.pdf}
+  \caption{QQ plots of ID2 modelled by each distributions}
+\end{figure}
+
+With this sample, GGP, EGP, and PH models show visually similar performances. Since the ultimate goal is to find general method generating stochastic daily precipitation model, it it essential to compare each methods with differenct cases. Furthermore, not only with qq plot, AIC \cite{akaike1974new} and BIC \cite{schwarz1978estimating} were used to do numerical comparison.
+
+\begin{figure}
+  \centering
+  \includegraphics[width = 15cm]{QQplot_multicomp.pdf}
+  \caption{QQ plots for 3 different stations modelled by GGP distribution(lest), EGP distribution(middle), and the PH distribution(right)}
+\end{figure}
+
+
+
+<<goodness of fit, include = FALSE, eval=FALSE>>=
+xtab <- xtable(mat, caption = "AIC and BIC")
+print(xtab, booktabs = TRUE)
+@
 
 
 
@@ -139,6 +233,27 @@ f(x ; \theta) = \theta e^{-\theta x}, \quad x \geq 0, \theta > 0,
 %========================
 \section{World data}
 %========================
+
+In the research of \cite{papalexiou2012entropy}, wordwide GHCN data set was analyzed to figure out its shape of empirical distribution and tail behavior. To capture the shape characteristics of each sample, L-moments ratio was used. A typical L-moments ratio diagram is made with L-skewness versus L-kurtosis, but with precipitation data, but we prefer L-varaiation versus L-skewness as \cite{papalexiou2012entropy} done before. 
+
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width = 15cm]{lmrd.pdf}
+  \caption{L-variation vs. L-skewness plot}
+\end{figure}
+
+
+<<bell J texas, fig.height=4, fig.cap="Histograms of bell-shape(right), J-shape(middle), and one of USHCN Texas(right) data">>=
+Mmat %>% filter(., t_2 >= 0.7 & t_3 >= 0.7) -> JShape
+Mmat %>% filter(., t_2 <= 0.43 & t_3 <= 0.43) -> BellShape
+
+layout(matrix(1:3, ncol = 3))
+hist(get.station.data(BellShape$Id[3]), probability = TRUE, breaks = 60, main = "", xlab = "")
+hist(get.station.data(JShape$Id[3]), probability = TRUE, breaks = 60, main = "", xlab = "")
+hist(by_station(3), probability = TRUE, breaks = 60, main = "", xlab = "")
+@
 
 
 
