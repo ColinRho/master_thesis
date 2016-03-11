@@ -1,7 +1,7 @@
 ## precedent.R
 #.
 #. Reproducing some results from precedent studies 
-#.  Papalexiou et al. 2012
+#.  Papalexiou et al. 2012, Li et al. 2012
 #.
 
 suppressPackageStartupMessages({
@@ -10,11 +10,17 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(evir)
   library(lmom)
-
+  library(ffbase)
+  library(LaF)
+  library(magrittr)
+  library(R.utils)
+  
 })
 
+##- GHCN
+
 ###################################################################################################
-### 0. Preprocessing 
+### 1-1. GHCN : Preprocessing 
 ###################################################################################################
 
 # station inventory
@@ -34,7 +40,7 @@ stationlist = selectedInv$Id
 filelist = paste(stationlist, ".dly", sep = "")
 
 ###################################################################################################
-### 1. L-variation vs L-skewness from Paplexitou et al. [2012]
+### 1-2. GHCN : L-variation vs L-skewness from Paplexitou et al. [2012]
 ###################################################################################################
 
 # matrix of l-moment ratios (~ 4-th moment)
@@ -50,24 +56,9 @@ Lmat <- cbind(Id = stationlist, Lmat)
 Lmat[, t_2 := l_2 / l_1]
 setcolorder(Lmat, c("Id", "l_1", "l_2", "t_2", "t_3", "t_4"))
 
-# LMRD, L-variation vs L-skewness
-plot(x = Lmat$t_2, y = Lmat$t_3, pch = 16,
-  ylab = expression(italic('L') * "-skewness"), xlab = expression(italic('L') * "-variation"), 
-  ylim = c(0, 1), xlim = c(0, 1))
-
-# average point 
-points(x = mean(Lmat$t_2), y = mean(Lmat$t_3), col = 'red', pch = 15)
-
-if(!dir.exists("plot/")) dir.create("plot/")
-dev.copy2pdf(file = "plot/lmrd.pdf", width = 8) ; dev.off()
-
-##### add parametric line on LMRD - GPD, GG ,BurrXII
-
-
-
 
 ###################################################################################################
-### 2. Peaks Over Threshold - estimating GPD shape parameter, Papalexiou et al.[2013 HESS]
+### 1-3. GHCN : Peaks Over Threshold - estimating GPD shape parameter, Papalexiou et al.[2013 HESS]
 ###################################################################################################
 
 ## defining tail, Papalexiou et al.[2013 HESS]
@@ -91,20 +82,56 @@ GPmat <- sapply(filelist, function(x) {
 GPmat <- t(GPmat) %>% data.table()
 GPmat <- cbind(Id = stationlist, GPmat)
 
-# empirical distribution of estimates of gpd shape parameter 
-hist(GPmat$xi, breaks = 70, probability = TRUE, xlim = c(-0.8,1),
-  xlab = expression( hat(xi) ), main = expression(paste("Empirical distribution of ", hat(xi))), 
-  col = 'grey')
-
-# drawing normal density curve 
-x <- seq(-2, 2,length=1000)
-y <- dnorm(x, mean = mean(GPmat$xi), sd = sd(GPmat$xi))
-lines(x, y, type="l", lwd = 2) ; rm(list = c('x', 'y'))
-
-dev.copy2pdf(file = "plot/dist_xi.pdf", width = 8) ; dev.off()
-
 Mmat <- merge(Lmat, GPmat, by = "Id") 
 rm(list = c('Lmat', 'GPmat'))
+
+
+##- USHCN Texas
+
+
+#. 49 weather stations in Texas 
+#. 10 climate divisions divided by National Weather Service 
+#. probably : Amarillo, Austin/San Antonio, Brownsville, Corpus Christi, 
+#.   Dallas/Fort Worth, El Paso, Houston/Galveston, Lubbock, Midland/Odessa, San Angelo
+
+###################################################################################################
+### 1. USHCN : data import and tidy up 
+###################################################################################################
+
+url <- "http://cdiac.ornl.gov/ftp/ushcn_daily/state41_TX.txt.gz"
+ushcn.zip <- "data/data/state41_TX.txt.gz"
+ushcn.raw <- "data/state41_TX.txt"
+
+if(!file.exists(ushcn.raw) & !file.exists(ushcn.zip))
+  download.file(url, ushcn.zip)
+
+if(!file.exists(ushcn.raw) & file.exists(ushcn.zip))
+  R.utils::gunzip(ushcn.zip, ushcn.raw)
+
+ushcn.tx.laf <- laf_open_fwf(ushcn.raw,
+  column_widths = c(6, 4, 2, 4,  rep(c(5, 1, 1, 1), 31) ),
+  column_types = c('character', 'integer', 'integer', 'character',
+    rep(c('integer', 'character', 'character', 'character'), 31)))
+
+
+ushcn.tx <- laf_to_ffdf(ushcn.tx.laf)
+
+ushcn.tx <- as.data.table(ushcn.tx)
+# missing values  
+ushcn.tx[ushcn.tx == -9999] = NA
+
+# assign column names 
+colnames(ushcn.tx) <- c("COOP_ID", "YEAR", "MONTH", "ELEMNT",
+  paste(c("VALUE", "MFLAG", "QFLAG", "SFLAG"), rep(1:31, each = 4), sep = "" ))
+
+ushcn.tx %<>% filter(ELEMNT == "PRCP") %>% select(-ELEMNT)
+
+tidy.ushcn.tx <- ushcn.tx %>% filter(., YEAR >= 1940, YEAR <= 2009) %>% 
+  select_(.dots = c("COOP_ID", "YEAR", "MONTH", paste("VALUE", 1:31, sep = "")))
+
+# 
+rm(list = c('url', 'ushcn.raw', 'ushcn.zip', 'ushcn.tx.laf'))
+
 
 # save image to shorten computing time 
 save.image(file = "data/precedent.RData")
