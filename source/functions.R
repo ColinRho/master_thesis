@@ -350,7 +350,7 @@ ph.qqplot <-
     print(c(AIC = AIC, BIC = BIC))
     
     qqplot(x, y, xlab = "Theoretical values", ylab = "Observed samples",
-      main = "Q-Q plot", ...)
+      main = "Model : Phase-type", xlim = c(0, max(y)), ...)
     abline(0, 1, col = 2, lty = 2)
     
   }
@@ -380,7 +380,7 @@ get.station.data <-
 
 general.qqplot <- 
   
-  function(y, model = "exponential", ...) {
+  function(y, model = "exponential", without.plot = FALSE, ...) {
     
     # sample
     y <- y[!is.na(y)]
@@ -388,7 +388,8 @@ general.qqplot <-
     # theoretical quantile
     x0 <- c(1:n)/(n+1)
     
-    if(!(model %in% c("exponential", "gamma", "kappa", "GG", "GB2", "FK08", "HEG")))
+    if(!(model %in% c("exponential", "gamma", "kappa", "GG", "GB2", "GGP", "EGP")))
+      # GGP := FK08, EGP := HEG in Li et al. 2012
       stop("invalid model name")
     
     if (model == "exponential") {
@@ -421,29 +422,35 @@ general.qqplot <-
       x <- do.call("qGB2", list(x0, mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau))
       loglik <- sum(log(dGB2(y, mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau)))
       
-    } else if (model == "FK08") {
+    } else if (model == "GGP") {
       
       # dynamic input for theta? 
       fit <- FK08(y, ...) ; k <- 4
       x <- do.call("qFK08", list(x0, fit))
       loglik <- sum(log(dFK08(y, fit)))
       
-    } else if (model == "HEG") {
+    } else if (model == "EGP") {
       
       fit <- HEG(y, ...) ; k <- 3
       x <- do.call("qHEG", list(x0, fit))
-      loglik <- - HEG_nLL(mu = fit@coef[1], xi = fit@coef[2], sigma = fit@coef[3])
+      nLL <- HEG_nLL(y)
+      loglik <- - nLL(mu = fit@coef[1], xi = fit@coef[2], sigma = fit@coef[3])
       
     }
     
     AIC <- 2*k - 2*loglik
     BIC <- k * log(n) - 2*loglik
     
-    print(c(AIC = AIC, BIC = BIC))
-    # plotting  
-    qqplot(x, y, xlab = "Theoretical Quantiles", ylab = "Ordered Sample", xlim = c(0, max(y)),
-      main = paste("Model : ", model, sep = ""))
-    abline(0, 1,  lty = 2, col = 'red')
+    if (!without.plot) {
+      
+      # plotting  
+      b <- qqplot(x, y, xlab = "Theoretical Quantiles", ylab = "Ordered Sample", xlim = c(0, max(y)),
+        main = paste("Model : ", model, sep = ""))
+      abline(0, 1,  lty = 2, col = 'red')
+      
+    }
+    
+    return(c(AIC = AIC, BIC = BIC))
     
   }
 
@@ -458,11 +465,14 @@ general.qqplot <-
 ## Kappa, Mielke, 1973
 
 
-kappa_nLL <- function(alpha, beta, theta) {
+kappa_nLL <- function(y) {
   
   n <- length(y)
-  - ( n * log((alpha*theta)/beta) + (theta - 1) * sum(log(y/beta)) - ((alpha + 1) / alpha) * 
-    sum(log(alpha + (y/beta)^(alpha * theta))) )
+  
+  function(alpha, beta, theta) {
+    - ( n * log((alpha*theta)/beta) + (theta - 1) * sum(log(y/beta)) - ((alpha + 1) / alpha) * 
+        sum(log(alpha + (y/beta)^(alpha * theta))) )
+  }
   
 }
 
@@ -471,7 +481,8 @@ fit.kappa <-
   
   function(y, start = list(alpha = 1, beta = 1, theta = 1)) {
   
-  stats4::mle(kappa_nLL, start = list(alpha = 1, beta = 1, theta = 1), lower = c(0, 0, 0), method = "L-BFGS-B")
+  stats4::mle(kappa_nLL(y), start = list(alpha = 1, beta = 1, theta = 1),
+    lower = c(0, 0, 0), method = "L-BFGS-B")
   
   }
 
@@ -512,7 +523,7 @@ qkappa <-
 # parameter estimation 
 FK08 <- 
   
-  function(y, theta = quantile(y, 0.95), show.tail.fit = FALSE) {
+  function(y, theta = quantile(y, 0.6), show.tail.fit = FALSE) {
     
     y <- y[!is.na(y)]
     if(sum(y < 0) != 0) stop("x should be positive")
@@ -597,24 +608,28 @@ qFK08 <-
 #.  quantile function in closed form...
 #.
 
-# negative log likelihood
-HEG_nLL <- function(mu, xi, sigma) {
+HEG_nLL <- function(y) {
   
   n <- length(y)
-  theta <- -mu * log(mu/sigma)
-  Z <- pexp(theta, rate = 1/mu) + 1 
-  l <- - n * log(Z) + sum(- log(mu) - y[which(y <= theta)] / mu) + 
-    sum(- log(sigma) - (1/xi + 1) * log(1 + xi * (y[which(y > theta)] - theta) / sigma))
-  -l  
+  function(mu, xi, sigma) {
+  
+    theta <- -mu * log(mu/sigma)
+    Z <- pexp(theta, rate = 1/mu) + 1 
+    l <- - n * log(Z) + sum(- log(mu) - y[which(y <= theta)] / mu) + 
+      sum(- log(sigma) - (1/xi + 1) * log(1 + xi * (y[which(y > theta)] - theta) / sigma))
+    -l  
+  
+  }
   
 }
+
 
 # parameter estimation 
 HEG <- 
   
-  function(y, start = list(mu = 0.1, xi = 0.2, sigma = 2)) {
+  function(y, start = list(mu = 1, xi = 0.2, sigma = 2)) {
     
-    stats4::mle(HEG_nLL, start)
+    stats4::mle(HEG_nLL(y), start)
     
   }
 
@@ -652,6 +667,55 @@ qHEG <-
 
 
 ###################################################################################################
-### 4. 
+### 4. Functions especially used in USCHN data
 ###################################################################################################
+
+# flattening function
+flat <- 
+  
+  # input vector y should be integer 
+  
+  function(y) {
+    
+    # flattening data
+    z <- table(y)
+    zz <- c()
+    for ( i in 1:length(z) ) {
+      
+      interval <- c(as.numeric(names(z[i])) - 0.5, as.numeric(names(z[i])) + 0.5)
+      v <- seq(from = interval[1], to = interval[2], length.out = z[i] + 2)
+      zz <- c(zz, v[-c(1, length(v))])
+      
+    }
+    
+    zz
+    
+  }
+
+
+# a function extracting daily data by each station without missing value and 0's 
+by_station <-
+  
+  # insert a positive integer from 1 to 49 corresponding to station ID number needed 
+  # flattening 
+  
+  function(ID, in.mm = TRUE, flat = FALSE) {
+    
+    id.value <- 
+      tidy.ushcn.tx %>% select(COOP_ID) %>% unique() %>% slice(ID) %>% as.integer
+    
+    # extract a vector
+    y <- 
+      tidy.ushcn.tx %>% filter(as.integer(COOP_ID) == id.value) %>% 
+      select(-c(COOP_ID, YEAR, MONTH)) %>% c() %>% unlist(., use.names = F) %>%
+      subset(!(is.na(.)) & . != 0)
+    
+    if (flat) v <- flat(y) 
+    else v <- y 
+    
+    # change unit(1/100 inch to 1/10 mm)
+    if (in.mm) v * 2.54
+    else v
+    
+  }
 
