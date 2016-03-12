@@ -361,7 +361,8 @@ get.station.data <-
   
   function(stationid) {
     
-    fread(paste(FILE.DIR, stationid, ".dly", sep = "")) %>% unlist(., use.names = FALSE)
+    # multiply 0.1 to trasform tenth of mm to mm
+    fread(paste(FILE.DIR, stationid, ".dly", sep = "")) %>% unlist(., use.names = FALSE) * 0.1
     
   }
 
@@ -380,7 +381,7 @@ get.station.data <-
 
 general.qqplot <- 
   
-  function(y, model = "exponential", without.plot = FALSE, ...) {
+  function(y, model = "exponential", without.plot = FALSE, show.fit.result = FALSE, ...) {
     
     # sample
     y <- y[!is.na(y)]
@@ -450,6 +451,9 @@ general.qqplot <-
       
     }
     
+    if (show.fit.result)
+      print(fit)
+    
     return(c(AIC = AIC, BIC = BIC))
     
   }
@@ -476,14 +480,34 @@ kappa_nLL <- function(y) {
   
 }
 
+
 #. fitting 3-parameter kappa distribution via ML method
 fit.kappa <- 
   
-  function(y, start = list(alpha = 1, beta = 1, theta = 1)) {
+  function(y) {
   
-  stats4::mle(kappa_nLL(y), start = list(alpha = 1, beta = 1, theta = 1),
-    lower = c(0, 0, 0), method = "L-BFGS-B")
-  
+    start <- list(alpha = runif(1, 0.5, 2), beta =  runif(1, 0.5, 2), theta =  runif(1, 0.5, 2))
+    
+    trial <- function(start)
+      stats4::mle(kappa_nLL(y), start, method = "L-BFGS-B", lower = c(0,0,0))
+    
+    out <- try(trial(start), TRUE)
+    
+    if (class(out) == "try-error") {
+      
+      while(class(out) == "try-error") {
+        
+        # reset starting point 
+        start <- list(alpha = runif(1, 0.5, 2), beta =  runif(1, 0.5, 2), theta =  runif(1, 0.5, 2))
+        
+        out <- try(trial(start), TRUE)
+        
+      }
+      
+    }
+    
+    return(out)
+    
   }
 
 #. density, probability, quantile function of kappa
@@ -608,6 +632,7 @@ qFK08 <-
 #.  quantile function in closed form...
 #.
 
+#. negative log-likelihodd
 HEG_nLL <- function(y) {
   
   n <- length(y)
@@ -627,11 +652,40 @@ HEG_nLL <- function(y) {
 # parameter estimation 
 HEG <- 
   
-  function(y, start = list(mu = 1, xi = 0.2, sigma = 2)) {
+  function(y) {
     
-    stats4::mle(HEG_nLL(y), start)
+    setting <- function() {
+      
+      list(mu = runif(n = 1, min = mean(y) - sd(y), max = mean(y) + sd(y)), 
+        xi = runif(n = 1, 0.1, 0.5),
+        sigma = runif(1, 8, 20))
     
+    }
+      
+    
+    start <- setting()
+    trial <- function(start)
+      stats4::mle(HEG_nLL(y), start, method = "L-BFGS-B", lower = c(0,0,0))
+    
+    out <- try(trial(start), TRUE)
+    
+    if (class(out) == "try-error") {
+      
+      while(class(out) == "try-error") {
+        
+        # reset starting point 
+        start <- setting()
+        
+        out <- try(trial(start), TRUE)
+        
+      }
+      
+    }
+    
+    return(out)
+      
   }
+
 
 # distribution function
 pHEG <-
@@ -661,7 +715,6 @@ qHEG <-
       xi = xi, beta = sigma, mu = theta) 
     
     c(under_theta, over_theta)
-    
     
   }
 
@@ -714,7 +767,7 @@ by_station <-
     else v <- y 
     
     # change unit(1/100 inch to 1/10 mm)
-    if (in.mm) v * 2.54
+    if (in.mm) v * 0.254
     else v
     
   }

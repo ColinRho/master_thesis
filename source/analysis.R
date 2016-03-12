@@ -18,9 +18,8 @@ Mmat %>% filter(., t_2 <= 0.43 & t_3 <= 0.43) -> BellShape
 
 ##- AIC BIC table
 ###################################################################################################
-stationIDs <- sample(1:49, 10) %>% sort()
 
-info.tab <- sapply(stationIDs, function(x) {
+info.tab <- sapply(1:49, function(x) {
   
   y <- by_station(x) 
   n <- length(y)
