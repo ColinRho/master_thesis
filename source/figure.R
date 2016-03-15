@@ -28,12 +28,23 @@ for(id in selected.id) {
   
   y <- by_station(ID = id)
   
-  ph_fit <- EMpht(y, phases = 3, iter = n.iter, type = dist.type)
-  models <- c("exponential", "gamma", "kappa", "GGP", "EGP")
-  
+  models <- c("exp", "gamma", "kappa", "GGP", "EGP", "PH")
   par(mfrow = c(2,3))
-  for (m in models) general.qqplot(y, model = m)
-  ph.qqplot(fit = ph_fit)
+  
+  if (file.exists(paste("results/qmat.", id, ".csv", sep = ""))) {
+    
+    qmat <- fread(paste("results/qmat.", id, ".csv", sep = ""))
+    for(m in models[1:5]) generalQQplot(y, model = m)
+    
+    qqplot(qmat$PH, y, main = "Model : PH", xlim = c(0, max(y)),
+      xlab = "Theoretical Quantiles", ylab = "Observed Sample")  
+    abline(0, 1, col = 'red', lty = 2)
+  
+  } else {
+    
+    for (m in models) generalQQplot(y, model = m)
+    
+  }
   
   dev.copy2pdf(file = paste("plot/QQplots_", "ID", id, ".pdf", sep = ""), width = 8)
   dev.off()
@@ -45,14 +56,12 @@ for(id in selected.id) {
 ##- Comparing multi componenet models 
 ###################################################################################################
 #. 
-#.
+#. this part must be runned after analysis.R 
 #.
 ## ----------------- ## 
 #. loop and ph-fitting set up
 selected.id = c(2, 11, 44)
-n.iter = 7000
-dist.type = 4 # coxian 
-is.logph = FALSE # default
+
 ## ----------------- ## 
 #.
 #.
@@ -60,20 +69,29 @@ is.logph = FALSE # default
 layout(matrix(1:9, ncol = 3, byrow = TRUE))
 for(id in selected.id) {
   
-  y <- by_station(ID = id)
+  qmatName <- paste("results/qmat.", id, ".csv", sep = "")
+  qmat <- fread(qmatName)
+  y <- qmat$y
   
-  general.qqplot(y, model = "GGP")
+  qqplot(qmat$GGP, y, main = "Model : GGP", xlim = c(0, max(y)),
+    xlab = "Theoretical Quantiles", ylab = "Ordered Sample")
   text(x = max(y) * 0.9, y = max(y) * 0.2, paste("ID", id, sep = ""), cex = 1.5)
-  general.qqplot(y, model = "EGP") 
-  text(x = max(y) * 0.9, y = max(y) * 0.2, paste("ID", id, sep = ""), cex = 1.5)
+  abline(0, 1, col = 'red', lty = 2)
   
-  ph_fit <- EMpht(y, phases = 3, iter = n.iter, type = dist.type, curve.fit = FALSE)
-  ph.qqplot(fit = ph_fit)
+  qqplot(qmat$EGP, y, main = "Model : EGP", xlim = c(0, max(y)),
+    xlab = "Theoretical Quantiles", ylab = "Ordered Sample")
   text(x = max(y) * 0.9, y = max(y) * 0.2, paste("ID", id, sep = ""), cex = 1.5)
+  abline(0, 1, col = 'red', lty = 2)
   
+  qqplot(qmat$PH, y, main = "Model : PH", xlim = c(0, max(y)),
+    xlab = "Theoretical Quantiles", ylab = "Ordered Sample")
+  text(x = max(y) * 0.9, y = max(y) * 0.2, paste("ID", id, sep = ""), cex = 1.5)
+  abline(0, 1, col = 'red', lty = 2)
+
 }
 
-dev.copy2pdf(file = "plot/QQplot_multicomp.pdf", width = 8) ; dev.off()
+dev.copy2pdf(file = "plot/QQplot_multicomp.pdf", width = 8, height = 8) 
+dev.off()
 ###################################################################################################
 
 

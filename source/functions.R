@@ -28,6 +28,20 @@ suppressPackageStartupMessages({
 #. back transform, functions for scaled logPH distribution
 #. these functions are depend on package 'actuar' 
 
+dPH <- function(x, fit) {
+  
+  prob <- fit$alpha ; rates <- fit$T
+  dphtype(x, prob = prob, rates = rates)
+  
+}
+
+qPH <- function(p, fit) {
+  
+  prob <- fit$alpha ; rates <- fit$T
+  qphtype(p, prob = prob, rates = rates)
+  
+}
+
 # density funtcion of scaled logPH distribution. 
 dscaled.logph <- 
   
@@ -179,13 +193,6 @@ EMpht <-
     
     
     ## Step 4. report the result
-    
-    # print fitting algorithm summary 
-    cat("\n","\n")
-    cat("distribuion type : ", as.character(dists[type,]), "\n")
-    cat("number of phases : ", phases, "\n")
-    cat("number of iterations : ", iter, "\n")
-    
     
     # return parameters 
     fit <- list(data = vec, dist.type = dists[type,], n.iter = as.numeric(iter),
@@ -379,9 +386,71 @@ get.station.data <-
 #.
 #.
 
-general.qqplot <- 
+#. general-purpose estimation function for every considered model in analysis
+generalEst <- 
   
-  function(y, model = "exponential", without.plot = FALSE, show.fit.result = FALSE, ...) {
+  function(y, model, ...) {
+  
+    # sample
+    y <- y[!is.na(y)]
+  
+    if(!(model %in% c("exp", "gamma", "kappa", "GG", "GB2", "GGP", "EGP", "PH")))
+      # GGP := FK08, EGP := HEG in Li et al. 2012
+      stop("invalid model name")
+  
+    if (model == "exp") {
+      
+      est = 1/mean(y) ; k <- 1
+      
+    } else if (model == "gamma") {
+      
+      fit <- MASS::fitdistr(y, 'gamma') ; k <- 2
+      est <- fit$estimate
+      
+    } else if (model == "kappa") {
+      
+      fit <- fit.kappa(y, ...) ; k <- 3
+      est <- fit
+      
+    } else if (model == "GG") {
+      
+      fit <- gamlssML(y, family = 'GG', ...) ; k <- 3
+      est <- c(mu = fit$mu, sigma = fit$sigma, nu = fit$nu)
+      
+    } else if (model == "GB2") {
+      
+      fit <- gamlss::gamlssML(y, family = "GB2", ...) ; k <- 4
+      est <- c(mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau)
+      
+    } else if (model == "GGP") {
+      
+      # dynamic input for theta? 
+      fit <- GGP(y, ...) ; k <- 4
+      est <- fit
+      
+    } else if (model == "EGP") {
+      
+      fit <- EGP(y, ...) ; k <- 3
+      est <- fit
+      
+    } else if (model == "PH") {
+      
+      # setting default input
+      fit <- EMpht(y, phases = 3, type = 4, iter = 5000, curve.fit = FALSE)
+      k <- length(fit$alpha)*2 - 1
+      est <- fit 
+      
+    }
+  
+    list(est = est, k = k)
+  
+  }
+
+
+#. general-purpose infomation(AIC, BIC) generating function
+generalInfo <-
+  
+  function(y, model = "exp gamma kappa GG GB2 GGP EGP PH") {
     
     # sample
     y <- y[!is.na(y)]
@@ -389,72 +458,110 @@ general.qqplot <-
     # theoretical quantile
     x0 <- c(1:n)/(n+1)
     
-    if(!(model %in% c("exponential", "gamma", "kappa", "GG", "GB2", "GGP", "EGP")))
+    models <- unlist(strsplit(model, split = " "))
+    
+    if(sum(!(models %in% c("exp", "gamma", "kappa", "GG", "GB2", "GGP", "EGP", "PH"))) != 0)
       # GGP := FK08, EGP := HEG in Li et al. 2012
       stop("invalid model name")
     
-    if (model == "exponential") {
+    sapply(models, function(x) {
       
-      x <- do.call("qexp", list(x0, rate = 1/mean(y))) ; k <- 1
-      loglik <- sum(log(dexp(y, rate = 1/mean(y))))
+      ests <- generalEst(y, model = x) ; k <- ests$k ; est <- ests$est
+      if (x == 'gamma')
+        v <- log(do.call(paste("d", x, sep = ""), list(y, shape = est[1], rate = est[2])))
+      else if (x == 'GG') {
+        v <- log(do.call(paste("d", x, sep = ""),
+          list(y, mu = est[1], sigma = est[2], nu = est[3])))
+      } else if (x == 'GB2') {
+        v <- log(do.call(paste("d", x, sep = ""),
+          list(y, mu = est[1], sigma = est[2], nu = est[3], tau = est[4])))
+      } else {
+        v <- log(do.call(paste("d", x, sep = ""), list(y, est)))
+      }
       
-    } else if (model == "gamma") {
+      v[is.infinite(v)] <- NA
+      loglik <- sum(v, na.rm = T)
       
-      fit <- MASS::fitdistr(y, 'gamma') ; k <- 2
-      par.ests <- fit$estimate
-      x <- do.call("qgamma", list(x0, shape = par.ests[1], rate = par.ests[2]))
-      loglik <- sum(log(dgamma(y, shape = par.ests[1], rate = par.ests[2])))
+      c(AIC = 2*k - 2*loglik, BIC = k * log(n) - 2*loglik)
+      
+    })
     
-    } else if (model == "kappa") {
+  }
+
+
+#. general-purpose quantile function
+generalQQplot <-
+  
+  function(y, model = "exp gamma kappa GG GB2 GGP EGP PH", as.quantile = FALSE) {
+    
+    # sample
+    y <- y[!is.na(y)]
+    n <- length(y)
+    # theoretical quantile
+    x0 <- c(1:n)/(n+1)
+    
+    models <- unlist(strsplit(model, split = " "))
+    p <- length(models)
+    
+    if(sum(!(models %in% c("exp", "gamma", "kappa", "GG", "GB2", "GGP", "EGP", "PH"))) != 0)
+      # GGP := FK08, EGP := HEG in Li et al. 2012
+      stop("invalid model name")
+    
+    qmat <- sapply(models, function(x) {
       
-      fit <- fit.kappa(y, ...) ; k <- 3
-      x <- do.call("qkappa", list(x0, alpha = fit@coef[1], beta = fit@coef[2], theta = fit@coef[3]))
-      loglik <- sum(log(dkappa(y, alpha = fit@coef[1], beta = fit@coef[2], theta = fit@coef[3])))
+      est <- generalEst(y, model = x)$est
+      if (x == 'gamma')
+        do.call(paste("q", x, sep = ""), list(x0, shape = est[1], rate = est[2]))
+      else if (x == "GG"){
+        do.call(paste("q", x, sep = ""), list(x0, mu = est[1], sigma = est[2], nu = est[3]))
+      } else if (x == "GB2") {
+        do.call(paste("q", x, sep = ""), 
+          list(x0, mu = est[1], sigma = est[2], nu = est[3], tau = est[4]))
+      } else {
+        do.call(paste("q", x, sep = ""), list(x0, est)) 
+      }
+       
+    })
+    
+    qmat %<>% data.table()
+    
+    if (as.quantile) return(qmat)
+    # else plotting 
+    # the layout should be assigned before
+    else {
       
-    } else if (model == "GG") {
       
-      fit <- gamlssML(y, family = 'GG', ...) ; k <- 3
-      x <- do.call("qGG", list(x0, mu = fit$mu, sigma = fit$sigma, nu = fit$nu))
-      loglik <- sum(log(dGG(y, mu = fit$mu, sigma = fit$sigma, nu = fit$nu)))
-      
-    } else if (model == "GB2") {
-      
-      fit <- gamlss::gamlssML(y, family = "GB2", ...) ; k <- 4
-      x <- do.call("qGB2", list(x0, mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau))
-      loglik <- sum(log(dGB2(y, mu = fit$mu, sigma = fit$sigma, nu = fit$nu, tau = fit$tau)))
-      
-    } else if (model == "GGP") {
-      
-      # dynamic input for theta? 
-      fit <- FK08(y, ...) ; k <- 4
-      x <- do.call("qFK08", list(x0, fit))
-      loglik <- sum(log(dFK08(y, fit)))
-      
-    } else if (model == "EGP") {
-      
-      fit <- HEG(y, ...) ; k <- 3
-      x <- do.call("qHEG", list(x0, fit))
-      nLL <- HEG_nLL(y)
-      loglik <- - nLL(mu = fit@coef[1], xi = fit@coef[2], sigma = fit@coef[3])
+      invisible(sapply(models, function(m) {
+        
+        x <- select_(qmat, m) %>% unlist(., use.names = FALSE)
+        qqplot(x, y, xlab = "Theoretical Quantiles", ylab = "Ordered Sample",
+          xlim = c(0, max(y)), main = paste("Model : ", m, sep = ""))
+        abline(0, 1,  lty = 2, col = 'red')
+        
+      }))
       
     }
     
-    AIC <- 2*k - 2*loglik
-    BIC <- k * log(n) - 2*loglik
+  }
+
+#. generally drawing qqplot via qmat made by generaQQplot(..., as.quantile=TRUE)
+generalQQviaQmat <-
+  
+  function(qmat, layout.matrix) {
     
-    if (!without.plot) {
+    layout(mat = layout.matrix)
+    y <- qmat$y
+    models <- colnames(qmat)
+    models <- models[models != "y"]
+    
+    invisible(sapply(models, function(m) {
       
-      # plotting  
-      b <- qqplot(x, y, xlab = "Theoretical Quantiles", ylab = "Ordered Sample", xlim = c(0, max(y)),
-        main = paste("Model : ", model, sep = ""))
+      x <- select_(qmat, m) %>% unlist(., use.names = FALSE)
+      qqplot(x, y, xlab = "Theoretical Quantiles", ylab = "Ordered Sample",
+        xlim = c(0, max(y)), main = paste("Model : ", m, sep = ""))
       abline(0, 1,  lty = 2, col = 'red')
       
-    }
-    
-    if (show.fit.result)
-      print(fit)
-    
-    return(c(AIC = AIC, BIC = BIC))
+    }))
     
   }
 
@@ -513,41 +620,45 @@ fit.kappa <-
 #. density, probability, quantile function of kappa
 dkappa <- 
   
-  function(x, alpha, beta, theta) {
+  function(x, fit) {
   
-  (alpha * theta / beta) * (x / beta)^(theta - 1) * 1 / (alpha + (x / beta)^(alpha * theta))^(1 + 1/alpha)
+    alpha <- fit@coef[1] ; beta <- fit@coef[2] ; theta <- fit@coef[3]
+    (alpha * theta / beta) * (x / beta)^(theta - 1) * 1 /
+      (alpha + (x / beta)^(alpha * theta))^(1 + 1/alpha)
   
   }
 
 pkappa <- 
   
-  function(q, alpha, beta, theta) {
+  function(q, fit) {
   
-  ((q / beta)^(alpha * theta) / (alpha + (q / beta)^(alpha * theta)))^(1/alpha)
+    alpha <- fit@coef[1] ; beta <- fit@coef[2] ; theta <- fit@coef[3]
+    ((q / beta)^(alpha * theta) / (alpha + (q / beta)^(alpha * theta)))^(1/alpha)
 
   }  
 
 qkappa <- 
   
-  function(p, alpha, beta, theta) {
+  function(p, fit) {
   
-  beta / ( (1/p^alpha - 1) / alpha)^(1/(alpha * theta))
+    alpha <- fit@coef[1] ; beta <- fit@coef[2] ; theta <- fit@coef[3]
+    beta / ( (1/p^alpha - 1) / alpha)^(1/(alpha * theta))
   
   }
 
 
-## FK08 
+## GGP 
 #.  
 #.  1) estimating the gamma parameters with all the data
 #.  2) determining a reasonable threshold and estimating GP parameters above a threshold
 #.  3) adjusting GP scale parameter by eq. (6b) in Li et al. [2013]
-#.
+#.  4) default theta is 55% quantile derived from the best result of ID24 of Li et al. 
 #.  
 
 # parameter estimation 
-FK08 <- 
+GGP <- 
   
-  function(y, theta = quantile(y, 0.6), show.tail.fit = FALSE) {
+  function(y, theta = quantile(y, 0.55), show.tail.fit = FALSE) {
     
     y <- y[!is.na(y)]
     if(sum(y < 0) != 0) stop("x should be positive")
@@ -565,30 +676,30 @@ FK08 <-
     # step 3.
     gp_par[2] <- 1 / flexsurv::hgamma(theta, shape = gam_par[1], rate = gam_par[2])
     
-    FK08_par <- c(gam_par, gp_par)
+    GGP_par <- c(gam_par, gp_par)
     
-    list(data = y, par.ests = FK08_par, threshold = theta)
+    list(data = y, par.ests = GGP_par, threshold = theta)
     
   }
 
 # denstiy function
 
-dFK08 <-
+dGGP <-
   
   function(x, fit) {
     
-    theta <- fit$threshold ; FK08_par <- fit$par.ests
+    theta <- fit$threshold ; GGP_par <- fit$par.ests
     
-    c(dgamma(x[x <= theta], shape = FK08_par[1], rate = FK08_par[2]), 
-      (1 - pgamma(theta, shape = FK08_par[1], rate = FK08_par[2])) * 
-        dgpd(x[x > theta], xi = FK08_par[3], beta = FK08_par[4], mu = theta))
+    c(dgamma(x[x <= theta], shape = GGP_par[1], rate = GGP_par[2]), 
+      (1 - pgamma(theta, shape = GGP_par[1], rate = GGP_par[2])) * 
+        dgpd(x[x > theta], xi = GGP_par[3], beta = GGP_par[4], mu = theta))
     
   }
 
 
 # distribution function
 
-pFK08 <-
+pGGP <-
   
   function(q, fit) {
     
@@ -605,19 +716,19 @@ pFK08 <-
 
 
 
-# quantile function of model FK08
-qFK08 <- 
+# quantile function of model GGP
+qGGP <- 
   
   function(p, fit) {
     
     y <- fit$data
-    FK08_par <- fit$par.ests
+    GGP_par <- fit$par.ests
     theta <- fit$threshold
-    F_gamma_theta <- pgamma(q = theta, shape = FK08_par[1], rate = FK08_par[2])
+    F_gamma_theta <- pgamma(q = theta, shape = GGP_par[1], rate = GGP_par[2])
     
-    under_theta <- qgamma(p[which(p <= F_gamma_theta)], shape = FK08_par[1], rate = FK08_par[2])
+    under_theta <- qgamma(p[which(p <= F_gamma_theta)], shape = GGP_par[1], rate = GGP_par[2])
     over_theta <- qgpd((p[which(p > F_gamma_theta)] - F_gamma_theta)/(1 - F_gamma_theta),
-      xi = FK08_par[3], beta = FK08_par[4], mu = theta) 
+      xi = GGP_par[3], beta = GGP_par[4], mu = theta) 
     
     
     c(under_theta, over_theta)
@@ -625,7 +736,7 @@ qFK08 <-
 
 
 
-## HEG
+## EGP
 #.
 #.  main model of Li et al. [2013]
 #.  obtain estimates via ML method, in R stats4::mle() with negative log-likelihood
@@ -633,7 +744,7 @@ qFK08 <-
 #.
 
 #. negative log-likelihodd
-HEG_nLL <- function(y) {
+EGP_nLL <- function(y) {
   
   n <- length(y)
   function(mu, xi, sigma) {
@@ -650,22 +761,30 @@ HEG_nLL <- function(y) {
 
 
 # parameter estimation 
-HEG <- 
+EGP <- 
   
-  function(y) {
+  function(y, without.bound = FALSE) {
     
     setting <- function() {
       
-      list(mu = runif(n = 1, min = mean(y) - sd(y), max = mean(y) + sd(y)), 
-        xi = runif(n = 1, 0.1, 0.5),
-        sigma = runif(1, 8, 20))
+      list(mu = median(y), 
+        xi = 0.2,
+        sigma = runif(1, 10, 20))
     
     }
-      
     
     start <- setting()
-    trial <- function(start)
-      stats4::mle(HEG_nLL(y), start, method = "L-BFGS-B", lower = c(0,0,0))
+    
+    trial <- function(start) {
+      
+      if (without.bound)
+        stats4::mle(EGP_nLL(y), start)
+      
+      else
+        stats4::mle(EGP_nLL(y), start, method = "L-BFGS-B",
+          lower = c(0,0,0), upper = c(Inf, 1, Inf))  
+    }
+      
     
     out <- try(trial(start), TRUE)
     
@@ -682,13 +801,28 @@ HEG <-
       
     }
     
+    
     return(out)
       
   }
 
+# density function
+dEGP <-
+  
+  function(x, fit) {
+    
+    mu = fit@coef[1] ; xi = fit@coef[2] ; sigma = fit@coef[3]
+    theta = - mu * log(mu/sigma) ; Z = pexp(theta, rate = 1/mu) + 1
+    
+    under_theta <- dexp(x[which(x <= theta)], rate = 1/mu)
+    over_theta <- dgpd(x[which(x > theta)], xi = xi, beta = sigma, mu = theta)
+    c(under_theta, over_theta) / Z
+    
+  }
+    
 
 # distribution function
-pHEG <-
+pEGP <-
   
   function(q, fit) {
     
@@ -702,21 +836,22 @@ pHEG <-
 
 
 # quantile function in closed form
-qHEG <-
+qEGP <-
   
   function(p, fit) {
     
     mu = fit@coef[1] ; xi = fit@coef[2] ; sigma = fit@coef[3]
     theta = - mu * log(mu/sigma) ; Z = pexp(theta, rate = 1/mu) + 1
-    F_exp_theta <- pexp(theta, rate = 1/mu)
+    F_exp_theta <- pexp(theta, rate = 1/mu) 
     
-    under_theta <- qexp(p[which(p <= F_exp_theta)] * Z, rate = 1/mu)
-    over_theta <- qgpd((p[which(p > F_exp_theta)] * Z - F_exp_theta),
+    under_theta <- qexp(p[which(p <= F_exp_theta / Z)] * Z, rate = 1/mu)
+    over_theta <- qgpd((p[which(p > F_exp_theta / Z)] * Z - F_exp_theta),
       xi = xi, beta = sigma, mu = theta) 
     
     c(under_theta, over_theta)
     
   }
+
 
 
 ###################################################################################################
