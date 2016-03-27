@@ -16,22 +16,23 @@ info.tab <- sapply(1:49, function(x) {
   
   y <- by_station(x)
   n <- length(y)
-  c(n, generalInfo(y, model = "GGP"),
-    generalInfo(y, model = "EGP"),
-    generalInfo(y, model = "PH"))
+  c(n, generalInfo(y, model = "GGP", with.loglik = T),
+    generalInfo(y, model = "EGP", with.loglik = T),
+    generalInfo(y, model = "PH", with.loglik = T))
   
 })
 
 info.tab %<>% t()
 
 colnames(info.tab) <- c("recordLen",
-  apply(expand.grid(c("AIC", "BIC"), c("GGP", "EGP","PH")), 1, paste, collapse="."))
+  apply(expand.grid(c("loglik", "AIC", "BIC"), c("GGP", "EGP","PH")), 1, paste, collapse="."))
 
 info.tab <- data.frame(ID = paste("ID", 1:49, sep = ""), info.tab)
-setcolorder(info.tab, 
-  c("ID", "recordLen", "AIC.GGP", "AIC.EGP", "AIC.PH", "BIC.GGP", "BIC.EGP", "BIC.PH"))
+setcolorder(info.tab, c("ID", "recordLen", 
+  apply(arrange(expand.grid(c("loglik", "AIC", "BIC"), c("GGP", "EGP","PH")), Var1),
+    1, paste, collapse=".")))
 
-write.table(info.tab, file = "results/infotable.txt", row.names = FALSE)
+write.table(info.tab, file = "results/infotable.csv", row.names = FALSE)
 ###################################################################################################
 
 
@@ -83,8 +84,27 @@ generalInfo(y, model = "GGP EGP PH")
 qmat <- fread("results/qmat.24.csv")
 qmat %>% filter(., y >= quantile(y, 0)) %>% select(., contains(".sq")) %>% colSums()
 
+ids <- c(2, 5, 9, 11, 15, 24, 31, 44)
 
 
-y = get.station.data(BellShape$Id[3])
+quantmatch <- function(q = 0.9) {
 
+  ids <- c(2, 5, 9, 11, 15, 24, 31, 44)
+  
+  mat <- t(sapply(ids, function(x) {
+    
+    qmat <- fread(paste("results/qmat.", x, ".csv", sep = ""))
+    qmat %>% filter(., y >= quantile(y, q)) %>% select(., contains(".sq")) %>% colSums()
+    
+  })) %>% data.frame()
+  
+  
+  cbind(ID = paste("ID", ids, sep = ""), mat)
+  
+}
+
+lapply(c(0.9, 0.95, 0.98), quantmatch)
+merge()
+
+  
 

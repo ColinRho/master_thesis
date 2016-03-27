@@ -1,0 +1,380 @@
+%% LyX 2.1.4 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[10pt]{beamer}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\usepackage{url}
+\usepackage{booktabs}
+\ifx\hypersetup\undefined
+  \AtBeginDocument{%
+    \hypersetup{unicode=true,pdfusetitle,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=false,pdfborder={0 0 0},backref=false,colorlinks=false}
+  }
+\else
+  \hypersetup{unicode=true,pdfusetitle,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=false,pdfborder={0 0 0},backref=false,colorlinks=false}
+\fi
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\providecommand{\LyX}{\texorpdfstring%
+  {L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\@}
+  {LyX}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+ % this default might be overridden by plain title style
+ \newcommand\makebeamertitle{\frame{\maketitle}}%
+ % (ERT) argument for the TOC
+ \AtBeginDocument{%
+   \let\origtableofcontents=\tableofcontents
+   \def\tableofcontents{\@ifnextchar[{\origtableofcontents}{\gobbletableofcontents}}
+   \def\gobbletableofcontents#1{\origtableofcontents}
+ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\usetheme{CambridgeUS}
+\usecolortheme{default}
+
+\makeatother
+
+
+<<setup, include=FALSE>>=
+library(knitr)
+opts_knit$set(root.dir = normalizePath('../'))
+opts_chunk$set(cache = TRUE, autodep = TRUE, echo = FALSE, results='asis', fig.align='center',fig.show='hold',size='footnotesize')
+opts_chunk$set()
+@
+
+<<loading, cache=TRUE, echo=FALSE>>=
+source("source/functions.R")
+load("data/precedent.RData")
+@
+
+%--------- Title -------------
+\title[]{Modelling the Entire Range of Daily Precipitation Using Mixture Distribution}
+\author{Hyunwoo Rho}
+\institute[]{Dept. Applied Statitstics, Yonsei University}
+\date{2016. 04. 12}
+%-----------------------------
+
+
+\begin{document}
+
+
+%%%
+%========================
+\frame{\titlepage}
+%========================
+
+\part{Main Part}
+\section{}
+
+
+\frame{ 
+  \frametitle{Introduction} 
+  
+  \begin{itemize}
+    
+    \item Studies on precipitation back to the 1950s, including parametric, nonparametric, and semi-parametric methods. 
+    
+    \item Main goal of this study is to find precipitation model such that
+    \begin{enumerate}
+      \item fits the entire range of the daily precipitation data
+      \item performs well at extreme part of data 
+      \item generally accepted with any precipitation characteristics
+    \end{enumerate}
+
+    \item Some features of daily precipitation data
+    \begin{itemize}
+      \item Non-negative
+      \item Two distict part: dry days and rainy days
+      \item Right skewness on continuous part
+    \end{itemize}
+    
+  \end{itemize}
+  
+}
+
+
+%%%
+%========================
+\section{Data set}
+%========================
+
+%------------------------
+\frame{ 
+  
+  \frametitle{U.S. Historical Climatology Network(USHCN), Texas} 
+  
+  \begin{itemize}
+    \item Used by \cite{li2012simulation}.
+    \item 49 stations across the Texas. 
+  \end{itemize}
+  
+  <<sample summary, warning=FALSE>>=
+  summary_stations <- sapply(1:49, function(x) {
+  
+  y = by_station(ID = x) 
+  summary(y)  
+  })
+
+  sampleNumber <- sort(sample(1:49, size = 8))
+
+  mat <- cbind.data.frame(ID = unique(tidy.ushcn.tx[["COOP_ID"]]),
+    Label = paste("ID", 1:49, sep = ""),
+    t(summary_stations))
+
+  xtab <- xtable(rbind(mat[1:11,], rep("...", ncol(mat))), caption = "Summary of USHCN Texas data set")
+  print(xtab, booktabs = TRUE)
+  @
+  
+}
+
+%------------------------
+
+\frame{
+  \frametitle{Global Historical Climatology Network(GHCN)}
+  
+  \begin{itemize}
+    \item Used by \cite{papalexiou2012entropy, papalexiou2013extreme}.
+    \item There exist around 100 million stations around the world, but we used only 19328 stations after data cleansing with following criteria \cite{papalexiou2013extreme}.\footnote{For more infomation on data, see \cite{menne2012overview}} \\
+    
+    \begin{itemize}
+      \item Stations having record over 50 years
+      \item Missing days less than 20
+      \item Suspicious quaily of flags less than 0.1
+    \end{itemize}
+    
+  \end{itemize}
+  
+}
+
+%------------------------
+
+\frame{
+  
+  \frametitle{Station Sample : ID2}
+
+  <<sample histogram, fig.cap = "Sample histrogram : ID2", fig.height=3, fig.width = 6>>=
+  par(mar=c(4,4,.1,.1))
+  y = by_station(2)
+  hist(y, probability = TRUE, breaks = 60, main = "", xlab = "Precipitation (mm)", cex.lab = 0.8)
+  summ <- summary(y) ; nm <- names(summ)
+  legend('topright', legend = paste(nm, summ, sep = " "), title = paste("ID", 2, sep = ""), box.col = "white", cex = 0.8)
+  @
+
+}
+
+%%%
+%========================
+\section{Models}
+%========================
+
+%------------------------
+
+\frame{ 
+  \frametitle{Existing Models : Single-Component Models}
+
+  \begin{itemize}
+    \item Exponential \cite{todorovic1975stochastic}
+    
+    \begin{equation}
+      \label{eq:exponential.pdf} 
+      f(x ; \lambda) = \frac{1} {\lambda} e^{-x / \lambda}, \quad x \geq 0, \quad \lambda > 0,
+    \end{equation}
+
+    \item Gamma \cite{ison1971wet, wilks1999interannual, schoof2010development}
+
+    \begin{equation}
+      \label{eq:gamma.pdf} 
+      f(x ; \alpha, \beta) = \frac {1} {\beta^\alpha \Gamma(\alpha)} x^{\alpha - 1} e^{-x/\beta} , \quad x \geq 0, \quad \theta > 0,
+    \end{equation}
+    
+    \item Kappa \cite{mielke1973three}
+    \begin{equation}
+      \label{eq:kappa.pdf} 
+      f(x ; \alpha, \beta, \theta) = \frac {\alpha \theta} {\beta} (\frac {x} {\beta})^{\theta - 1} [\alpha + (\frac {x} {\beta})^{\alpha \theta}]^{-\frac {\alpha + 1} {\alpha}}, \quad x > 0, \quad \alpha, \beta, \theta > 0,
+    \end{equation}
+
+  \end{itemize}
+
+}
+
+%------------------------
+
+\frame{
+  \frametitle{Existing Models : Single-Component Models}
+  
+  <<single models, warning=FALSE, fig.height=4>>=
+  layout(matrix(1:3, ncol = 3))
+  generalQQplot(y, model = "exp gamma kappa")
+  @
+
+}
+
+%------------------------
+
+\frame{ 
+  \frametitle{Existing Models : Multiple-Component Models}
+
+  \begin{itemize}
+    \item Hybrid models were introduced to reflect heavily distributed tail of daily precipitation data
+    \item Hybrid of Gamma and Generalized Pareto(GGP) \cite{furrer2008improving}
+
+    \begin{align}
+      \label{eq:gamma_gp_hybrid.pdf}
+      f(x ; \alpha, \beta, \xi, \sigma, \theta) &= f_{gam}(x ; \alpha, \beta) I(x \leq \theta) + \nonumber \\
+        & [1-F_{gam}(\theta ; \alpha, \beta)] f_{GP}(x ; \xi, \sigma, \theta) I(x > \theta)
+    \end{align}
+    
+    \item Hybrid of Exponential and Generalized Pareto(EGP) \cite{li2012simulation}
+    
+    \begin{equation}
+      \label{eq:exponential_gp_hybrid.pdf}
+      f(x ; \lambda, \xi, \sigma, \theta) = \frac {1} {1 + F_{exp}(\theta ; \lambda)} [f_{exp}(x ; \lambda) I(x \leq \theta) + f_{GP}(x ;  \xi, \sigma, \theta) I(x > \theta)]
+    \end{equation}
+
+  \end{itemize}
+
+  EGP model has an advantage on avoiding threshold selection problem.
+}
+
+
+%------------------------
+
+\frame{ 
+  \frametitle{Existing Models : Multiple-Component Models}
+
+  \begin{itemize}
+    \item Number of parameters in hybrid models are 5 and 4 respecitvely, but those reduce to 4 and 3 due to continuity constraint on threshold $\theta$. 
+
+    \item for GGP model, $f(\theta-) = f(\theta+)$ derives
+
+    \begin{equation}
+      \label{eq:GGP_sigma}
+      \sigma = \frac {1 - F_{gam}(\theta ; \alpha, \beta)} {f_{gam}(\theta ; \alpha, \beta)}
+    \end{equation}
+    
+    \item for EGP model, $f(\theta-) = f(\theta+)$ derives
+
+    \begin{equation}
+      \label{theta_expression}
+      \theta = -\lambda \ln{\frac {\lambda} {\sigma}}
+    \end{equation}
+
+  \end{itemize}
+
+}
+
+
+%%%
+%========================
+\section{Phase-type Distribution}
+%========================
+
+%------------------------
+
+\frame{
+  \frametitle{Phase-type Distribution}
+  \begin{itemize}
+    \item The phase-type(PH) distribution was introduced by \cite{neuts1974probability}
+  \end{itemize}
+}
+
+
+%%%
+%========================
+\section{Analysis}
+%========================
+
+%------------------------
+
+\frame{
+  \frametitle{Model Comparison}
+  \begin{figure}
+    \centering
+    \includegraphics[width=9cm, height=6.5cm]{../plot/QQplot_multicomp.pdf}
+    \caption{QQ plots of 3 different stations modelled by GGP, EGP, and PH model}
+  \end{figure}
+}
+
+%------------------------
+
+\frame{
+  \frametitle{Model Comparison}
+
+  <<aic>>=
+  library(xtable)
+  tab <- fread("results/infotable.txt")
+  tab1 <- tab[sampleNumber,]
+  tab1 %<>% select(ID, recordLen, contains("AIC"))
+  xtab <- xtable(tab1, caption = "Sample AIC Table", label = "tab:aic")
+  print(xtab, booktabs = TRUE)
+  @
+
+}
+
+%------------------------
+
+\frame{
+  \frametitle{Model Comparison}
+
+  \begin{itemize}
+
+    \item For numerical comparison, AIC is used which can reflect the model complexity. 
+    \item Number of parameters of each models 
+
+    \begin{itemize}
+      \item GGP : 4
+      \item EGP : 3
+      \item PH (restricted) : 5
+    \end{itemize}
+
+  \end{itemize}
+
+  <<>>=
+  aic.tab <- aic.tab <- tab %>% select(., contains("AIC"))
+  aic.best <- apply(aic.tab, 1, which.min) 
+  
+  aic.best[aic.best == 1] <- "GGP"
+  aic.best[aic.best == 2] <- "EGP"
+  aic.best[aic.best == 3] <- "PH"
+    
+  print(xtable(table(aic.best), caption = "Number of selection as best model by AIC"), booktabs = TRUE, include.colnames = FALSE)
+  @
+
+  Even with consideration of model complexity, PH model is the most chosen method at USHCN Texas data. 
+
+}
+
+%------------------------
+
+\frame{
+  \frametitle{On Tail Behavior}
+}
+
+%------------------------
+
+\frame{
+  \frametitle{Distinct Instance : Bell-shaped Distribution}
+}
+
+
+%%%
+%========================
+\section{References}
+%========================
+
+
+%following selects the referencing style
+\bibliographystyle{./natbib}
+%following selects the reference bib file
+\bibliography{./myrefs.bib}
+
+
+\end{document}

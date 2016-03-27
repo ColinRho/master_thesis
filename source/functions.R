@@ -450,7 +450,7 @@ generalEst <-
 #. general-purpose infomation(AIC, BIC) generating function
 generalInfo <-
   
-  function(y, model = "exp gamma kappa GG GB2 GGP EGP PH") {
+  function(y, model = "exp gamma kappa GG GB2 GGP EGP PH", with.loglik = FALSE) {
     
     # sample
     y <- y[!is.na(y)]
@@ -481,8 +481,11 @@ generalInfo <-
       
       v[is.infinite(v)] <- NA
       loglik <- sum(v, na.rm = T)
+      AIC = 2*k - 2*loglik
+      BIC = k * log(n) - 2*loglik
       
-      c(AIC = 2*k - 2*loglik, BIC = k * log(n) - 2*loglik)
+      if (with.loglik) c(loglik = loglik, AIC = AIC, BIC = BIC)
+      else c(AIC = AIC, BIC = BIC)
       
     })
     
