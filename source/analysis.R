@@ -80,31 +80,24 @@ generalInfo(y, model = "GGP EGP PH")
 ###################################################################################################
 
 
+quantmatch <- function(q = 0.9, ids = c(2, 5, 9, 11, 15, 24, 31, 44)) {
 
-qmat <- fread("results/qmat.24.csv")
-qmat %>% filter(., y >= quantile(y, 0)) %>% select(., contains(".sq")) %>% colSums()
-
-ids <- c(2, 5, 9, 11, 15, 24, 31, 44)
-
-
-quantmatch <- function(q = 0.9) {
-
-  ids <- c(2, 5, 9, 11, 15, 24, 31, 44)
-  
   mat <- t(sapply(ids, function(x) {
     
     qmat <- fread(paste("results/qmat.", x, ".csv", sep = ""))
-    qmat %>% filter(., y >= quantile(y, q)) %>% select(., contains(".sq")) %>% colSums()
+    
+    qmat %>% filter(., y >= quantile(y, q)) %>% select(., contains(".sq")) %>%
+      colSums() / nrow(qmat) 
     
   })) %>% data.frame()
   
   
-  cbind(ID = paste("ID", ids, sep = ""), mat)
-  
 }
 
-lapply(c(0.9, 0.95, 0.98), quantmatch)
-merge()
+###################################################################################################
 
-  
+
+### phase type including 0s 
+
+
 

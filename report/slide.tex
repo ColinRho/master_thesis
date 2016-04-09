@@ -1,6 +1,55 @@
 %% LyX 2.1.4 created this file.  For more info, see http://www.lyx.org/.
 %% Do not edit unless you really know what you are doing.
-\documentclass[10pt]{beamer}
+\documentclass[10pt]{beamer}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb}
 \setcounter{secnumdepth}{3}
@@ -45,17 +94,9 @@
 \makeatother
 
 
-<<setup, include=FALSE>>=
-library(knitr)
-opts_knit$set(root.dir = normalizePath('../'))
-opts_chunk$set(cache = TRUE, autodep = TRUE, echo = FALSE, results='asis', fig.align='center',fig.show='hold',size='footnotesize')
-opts_chunk$set()
-@
 
-<<loading, cache=TRUE, echo=FALSE>>=
-source("source/functions.R")
-load("data/precedent.RData")
-@
+
+
 
 %--------- Title -------------
 \title[]{Modelling the Entire Range of Daily Precipitation Using Mixture Distribution}
@@ -63,8 +104,7 @@ load("data/precedent.RData")
 \institute[]{Dept. Applied Statitstics, Yonsei University}
 \date{2016. 04. 12}
 %-----------------------------
-
-
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
 
 
@@ -123,22 +163,31 @@ load("data/precedent.RData")
     \item 49 stations across the Texas. 
   \end{itemize}
   
-  <<sample summary, warning=FALSE>>=
-  summary_stations <- sapply(1:49, function(x) {
-  
-  y = by_station(ID = x) 
-  summary(y)  
-  })
+% latex table generated in R 3.2.3 by xtable 1.7-4 package
+% Sat Apr 09 20:16:28 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{rllllllll}
+  \toprule
+ & ID & Label & Min. & 1st Qu. & Median & Mean & 3rd Qu. & Max. \\ 
+  \midrule
+1 & 410120 & ID1 & 0.254 & 1.524 & 5.334 & 11.27 & 14.22 & 737.9 \\ 
+  2 & 410144 & ID2 & 0.254 & 1.524 & 5.08 & 12.02 & 14.73 & 308.4 \\ 
+  3 & 410174 & ID3 & 0.254 & 0.762 & 2.794 & 6.544 & 8.128 & 99.57 \\ 
+  4 & 410493 & ID4 & 0.254 & 1.524 & 4.826 & 10.4 & 13.46 & 179.1 \\ 
+  5 & 410498 & ID5 & 0.254 & 1.524 & 3.81 & 7.539 & 9.652 & 104.9 \\ 
+  6 & 410639 & ID6 & 0.254 & 1.27 & 4.064 & 10.74 & 12.7 & 269.5 \\ 
+  7 & 410832 & ID7 & 0.254 & 1.524 & 4.826 & 11.39 & 14.48 & 443.7 \\ 
+  8 & 410902 & ID8 & 0.254 & 1.27 & 4.064 & 10.89 & 12.95 & 226.8 \\ 
+  9 & 411000 & ID9 & 0.254 & 1.524 & 4.572 & 9.268 & 12.19 & 114.3 \\ 
+  10 & 411048 & ID10 & 0.254 & 1.524 & 4.572 & 11.66 & 14.73 & 263.7 \\ 
+  11 & 411138 & ID11 & 0.254 & 1.778 & 5.842 & 11.87 & 15.49 & 167.6 \\ 
+  12 &  &  & ... & ... & ... & ... & ... & ... \\ 
+   \bottomrule
+\end{tabular}
+\caption{Summary of USHCN Texas data set} 
+\end{table}
 
-  sampleNumber <- sort(sample(1:49, size = 8))
-
-  mat <- cbind.data.frame(ID = unique(tidy.ushcn.tx[["COOP_ID"]]),
-    Label = paste("ID", 1:49, sep = ""),
-    t(summary_stations))
-
-  xtab <- xtable(rbind(mat[1:11,], rep("...", ncol(mat))), caption = "Summary of USHCN Texas data set")
-  print(xtab, booktabs = TRUE)
-  @
   
 }
 
@@ -167,13 +216,16 @@ load("data/precedent.RData")
   
   \frametitle{Station Sample: Alice, TX(ID2)}
 
-  <<sample histogram, fig.cap = "Sample histrogram of USHCN Texas data set", fig.height=3, fig.width = 6>>=
-  par(mar=c(4,4,.1,.1))
-  y = by_station(2)
-  hist(y, probability = TRUE, breaks = 60, main = "", xlab = "Precipitation (mm)", cex.lab = 0.8)
-  summ <- summary(y) ; nm <- names(summ)
-  legend('topright', legend = paste(nm, summ, sep = " "), title = paste("ID", 2, sep = ""), box.col = "white", cex = 0.8)
-  @
+\begin{figure}
+
+{\centering \includegraphics[width=\maxwidth]{figure/sample_histogram-1} 
+
+}
+
+\caption[Sample histrogram of USHCN Texas data set]{Sample histrogram of USHCN Texas data set}\label{fig:sample histogram}
+\end{figure}
+
+
 
 }
 
@@ -217,10 +269,14 @@ load("data/precedent.RData")
 \frame{
   \frametitle{Existing Models : Single-Component Models}
   
-  <<single models, warning=FALSE, fig.height=4>>=
-  layout(matrix(1:3, ncol = 3))
-  generalQQplot(y, model = "exp gamma kappa")
-  @
+
+
+{\centering \includegraphics[width=\maxwidth]{figure/single_models-1} 
+
+}
+
+
+
 
 }
 
@@ -372,14 +428,28 @@ load("data/precedent.RData")
 \frame{
   \frametitle{Model Comparison}
 
-  <<aic>>=
-  library(xtable)
-  tab <- fread("results/infotable.txt")
-  tab1 <- tab[sampleNumber,]
-  tab1 %<>% select(ID, recordLen, contains("AIC"))
-  xtab <- xtable(tab1, caption = "Sample AIC Table", label = "tab:aic")
-  print(xtab, booktabs = TRUE)
-  @
+% latex table generated in R 3.2.3 by xtable 1.7-4 package
+% Sat Apr 09 20:16:31 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{rlrrrr}
+  \toprule
+ & ID & recordLen & AIC.GGP & AIC.EGP & AIC.PH \\ 
+  \midrule
+1 & ID5 & 2911 & 17447.56 & 17333.05 & 17315.94 \\ 
+  2 & ID12 & 1516 & 10744.76 & 10646.41 & 10646.93 \\ 
+  3 & ID13 & 5687 & 41165.68 & 40892.36 & 40899.23 \\ 
+  4 & ID16 & 4401 & 27430.98 & 27077.82 & 27043.17 \\ 
+  5 & ID29 & 5288 & 34285.82 & 33730.29 & 33727.67 \\ 
+  6 & ID33 & 6212 & 44489.86 & 44091.62 & 44086.12 \\ 
+  7 & ID48 & 4673 & 31643.74 & 31243.72 & 31236.74 \\ 
+  8 & ID49 & 5119 & 34782.47 & 34398.06 & 34403.24 \\ 
+   \bottomrule
+\end{tabular}
+\caption{Sample AIC Table} 
+\label{tab:aic}
+\end{table}
+
 
 }
 
@@ -401,16 +471,20 @@ load("data/precedent.RData")
 
   \end{itemize}
 
-  <<>>=
-  aic.tab <- aic.tab <- tab %>% select(., contains("AIC"))
-  aic.best <- apply(aic.tab, 1, which.min) 
-  
-  aic.best[aic.best == 1] <- "GGP"
-  aic.best[aic.best == 2] <- "EGP"
-  aic.best[aic.best == 3] <- "PH"
-    
-  print(xtable(table(aic.best), caption = "Number of selection as best model by AIC"), booktabs = TRUE, include.colnames = FALSE)
-  @
+% latex table generated in R 3.2.3 by xtable 1.7-4 package
+% Sat Apr 09 20:16:31 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{rr}
+  \toprule
+  \midrule
+EGP &   8 \\ 
+  PH &  41 \\ 
+   \bottomrule
+\end{tabular}
+\caption{Number of selection as best model by AIC} 
+\end{table}
+
 
   Even with consideration of model complexity, PH model is the most chosen method at USHCN Texas data. 
 
@@ -441,38 +515,33 @@ load("data/precedent.RData")
 \frame{
   \frametitle{On Tail Behavior}
 
-  <<qm.list, cache=TRUE>>=
-  ids = c(2, 5, 9, 11, 15, 24, 31, 44)
-  quantmatch <- function(q = 0.9, ids = c(2, 5, 9, 11, 15, 24, 31, 44)) {
+% latex table generated in R 3.2.3 by xtable 1.7-4 package
+% Sat Apr 09 20:16:33 2016
+\begin{table}[ht]
+\centering
+{\small
+\begin{tabular}{lrrrrrrrrr}
+  & $\eta$ = 0.9 & & & $\eta$ = 0.95 & & & $\eta$ = 0.98 \\
+\toprule
+ \toprule
+ID & GGP & EGP & PH & GGP & EGP & PH & GGP & EGP & PH \\ 
+  \midrule
+ID2 & 0.78 & 3.87 & 1.55 & 0.70 & 3.86 & 1.53 & 0.68 & 3.77 & 1.50 \\ 
+  ID5 & 2.45 & 4.87 & 0.22 & 2.35 & 4.86 & 0.22 & 2.32 & 4.79 & 0.18 \\ 
+  ID9 & 1.30 & 1.22 & 0.25 & 1.01 & 1.13 & 0.23 & 0.70 & 1.10 & 0.22 \\ 
+  ID11 & 1.83 & 0.91 & 0.32 & 1.66 & 0.90 & 0.31 & 1.13 & 0.86 & 0.29 \\ 
+  ID15 & 2.65 & 0.76 & 0.65 & 2.46 & 0.71 & 0.65 & 2.11 & 0.70 & 0.63 \\ 
+  ID24 & 1.18 & 4.21 & 0.17 & 1.16 & 4.20 & 0.16 & 0.92 & 4.19 & 0.15 \\ 
+  ID31 & 8.86 & 4.16 & 2.23 & 8.55 & 4.08 & 2.22 & 8.18 & 4.05 & 2.21 \\ 
+  ID44 & 2.98 & 13.92 & 2.68 & 2.68 & 13.87 & 2.67 & 1.94 & 13.83 & 2.65 \\ 
+   \bottomrule
+\end{tabular}
+}
+\caption{Mean of square qunatile difference with each value of $\eta$ equals to 0.9, 
+  0.95, 0.98} 
+\label{tab:qmatch}
+\end{table}
 
-    mat <- t(sapply(ids, function(x) {
-      
-      qmat <- fread(paste("results/qmat.", x, ".csv", sep = ""))
-      
-      qmat %>% filter(., y >= quantile(y, q)) %>% select(., contains(".sq")) %>%
-        colSums() / nrow(qmat) 
-      
-    })) %>% data.frame()
-    
-    mat
-  }
-
-  qmlist <- sapply(c(0.9, 0.95, 0.98), quantmatch) %>% do.call("cbind", .)
-  qmlist <- data.frame(paste("ID", ids, sep = ""), qmlist)
-  colnames(qmlist) <- c("ID", rep(c("GGP", "EGP", "PH"), 3))
-
-  cmnd <- c('& $\\eta$ = 0.9 & & & $\\eta$ = 0.95 & & & $\\eta$ = 0.98 \\\\\n\\toprule\n' )
-  xtab <-xtable(qmlist, label = "tab:qmatch",
-    caption = "Mean of square qunatile difference with each value of $\\eta$ equals to 0.9, 
-    0.95, 0.98") 
-
-  print(xtab, 
-    include.rownames = FALSE,
-    add.to.row = list(pos=list(-1),
-      command = cmnd),
-    booktabs = TRUE,
-    size = 'small')
-  @
 
 
 }
@@ -506,15 +575,16 @@ load("data/precedent.RData")
 \frame{
   \frametitle{Distinct Instance: Bell-shaped Distribution}
   
-  <<bell J texas, fig.cap="Histograms of bell-shape(right), J-shape(middle), and one of USHCN Texas(right) data", fig.height=3, fig.align='center'>>=
-  Mmat %>% filter(., t_2 >= 0.7 & t_3 >= 0.7) -> JShape
-  Mmat %>% filter(., t_2 <= 0.43 & t_3 <= 0.43) -> BellShape
+\begin{figure}
 
-  layout(matrix(1:3, ncol = 3))
-  hist(get.station.data(BellShape$Id[1]), probability = TRUE, breaks = 60, main = "", xlab = "")
-  hist(get.station.data(JShape$Id[3]), probability = TRUE, breaks = 60, main = "", xlab = "")
-  hist(by_station(3), probability = TRUE, breaks = 60, main = "", xlab = "")
-  @
+{\centering \includegraphics[width=\maxwidth]{figure/bell_J_texas-1} 
+
+}
+
+\caption[Histograms of bell-shape(right), J-shape(middle), and one of USHCN Texas(right) data]{Histograms of bell-shape(right), J-shape(middle), and one of USHCN Texas(right) data}\label{fig:bell J texas}
+\end{figure}
+
+
   
 }
 %------------------------

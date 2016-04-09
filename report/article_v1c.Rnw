@@ -11,6 +11,9 @@
 \usepackage{color}
 \usepackage{titlesec}
 \usepackage{gensymb}
+\usepackage{soul}
+\usepackage[utf8]{inputenc}
+\usepackage{caption}
 
 \newcommand{\cred}{ \color{red}}
 \newcommand{\cgreen}{\color{green}}
@@ -76,15 +79,14 @@ load("data/precedent.RData")
 \section{Introduction}
 %========================
 
-
 Measuring and predicting the precipitation are considered to be of great importance in many applications, including  agriculture, forest management and hydrology. Common models of  the precipitation are stochastic, in that they describe the phenomenon of rainfalls through some static or dynamic statistical models with specific distributions, with a suitable time interval as a base period of modelling. The choice of the time interval can be arbitrary in theory, but taking a daily basis is most natural and popular in the literature; see, for example, \cite{richardson1981stochastic}.\\
 
 Many of previous studies tried to model daily rainfall data through parametric approaches, for example, \cite{ison1971wet, mielke1973three, richardson1981stochastic, stern1984model}. Non-parameteric approaches have also been proposed by, e.g., \cite{sharma1999nonparametric, harrold2003nonparametric}. Though each approach has pros and cons, parametric models are generally advantageous in that they can model rainfall datasets with only a few parameters and can be easily extrapolated towards extreme area where rainfall observations are relatively rare in frequency. Simple  parametric models found in the literature include exponential, gamma and some transformed normal distributions. However, these simple models often fail to capture important characteristics of the rainfall datasets which are typically skewed, over-dispersed, relatively heavy-tailed, and sometimes bell-shaped. As an alternative approach to improve the calibration, mixtures of two parametric distributions have been suggested in the literature. \\
  
-Being natural extensions of those simple stochastic models, the class of mixture distributions is more flexible with more parameters, and thus can address unique shape characteristics of the rainfall datasets. Successful applications of the mixture distributions towards the precipitation datasets can be abundantly found in the literature. For example, {\cred references here.}\\
+Being natural extensions of those simple stochastic models, the class of mixture distributions is more flexible with more parameters, and thus can address unique shape characteristics of the rainfall datasets. Successful applications of the mixture distributions towards the precipitation datasets can be abundantly found in the literature. For example, {\cblue \cite{woolhiser1982stochastic} adopted mixed exponential distribution and \cite{yoo2005rainfall} exploited mixed gamma distribution. From recent study of \cite{vrac2007stochastic, hundecha2009modeling}, dynamic mixture of gamma and generalzied Pareto distribution was considered to give more focus on extreme cases.} {\cred references here.}\\
 \vspace{2cm}
 
-Related to this, along some studies in hydrology community, the evidence of heavy-tailed phenomenon on the distribution of high precipitation amount has recently gained strong support from researchers; see, e.g.,  \cite{koutsoyiannis2004statistics}. The underlying idea of the heavy tail essentially says that the extreme precipitation amounts over some high threshold value tend to have different distributional behaviours and, accordingly, can be modelled using a separate statistical distribution. In particular, the distribution for the tail is modelled by the generalized Pareto distiribution (GPD) justified by the standard result of extreme value theory (EVT). To this extent various methods were investigated and explored in the literature, focusing on the tail behavior of daily precipitation described by some power (or polynomial) survival function; see, for instance, \cite{furrer2008improving, li2012simulation, papalexiou2012entropy, papalexiou2013extreme}. Most notably, \cite{li2012simulation} presented a hybrid distribution to model the full spectrum of daily precipitation under the EVT framework where the body and tail parts of the dataset are modelled by an exponential and the GPD, respectively. However, there seems no universal agreement on how heavy the precipitation amounts are. For example, \cite{wilson2005fundamental} pointed out that extreme daily precipitations of some areas can be adequately modelled by an exponential tails, which is shorter than a power tail. This implicitly suggests that there is no need of separate modelling for the tail as long as the candidate distributions have exponentially decaying tails. {\cred more similar references needed.} Thus it remains controversial that whether the precipitation extremes follow a power-tail or an exponential-tail, and it is reasonable to say that, depending on the area under consideration, an exponential-type distribution or its mixture may serve as a good candidate to describe the rainfall datasets' body as well as tail. \\
+Related to this, along some studies in hydrology community, the evidence of heavy-tailed phenomenon on the distribution of high precipitation amount has recently gained strong support from researchers; see, e.g.,  \cite{koutsoyiannis2004statistics}. The underlying idea of the heavy tail essentially says that the extreme precipitation amounts over some high threshold value tend to have different distributional behaviours and, accordingly, can be modelled using a separate statistical distribution. In particular, the distribution for the tail is modelled by the generalized Pareto distiribution (GPD) justified by the standard result of extreme value theory (EVT). To this extent various methods were investigated and explored in the literature, focusing on the tail behavior of daily precipitation described by some power (or polynomial) survival function; see, for instance, \cite{furrer2008improving, li2012simulation, papalexiou2012entropy, papalexiou2013extreme}. Most notably, \cite{li2012simulation} presented a hybrid distribution to model the full spectrum of daily precipitation under the EVT framework where the body and tail parts of the dataset are modelled by an exponential and the GPD, respectively. However, there seems no universal agreement on how heavy the precipitation amounts are. \st{For example}, \cite{wilson2005fundamental} \st{pointed out that extreme daily precipitations of some areas can be adequately modelled by an exponential tails, which is shorter than a power tail.} {\cblue For example, \cite{booij2002extreme} tried to model extreme daily precipitations with Gumbel distribution and exponential distribution, which have exponential tail, shorter than a power tail.} This implicitly suggests that there is no need of separate modelling for the tail as long as the candidate distributions have exponentially decaying tails. {\cblue  Also \cite{park2011changes} compared several GEV distribution based model and revealed both power tail model and exponential tail model could be adopted to explain extreme rainfalls. } {\cred more similar references needed.} Thus it remains controversial that whether the precipitation extremes follow a power-tail or an exponential-tail, and it is reasonable to say that, depending on the area under consideration, an exponential-type distribution or its mixture may serve as a good candidate to describe the rainfall datasets' body as well as tail. \\
 
 In this paper, we are interested in modelling the entire range of typical precipitation datasets. For this, we propose the phase-type distribution (PHD) as an alternative mixture distribution to model the precipitation. The PHD is a class of mixture distributions that contains many well-known distributions, such as an exponential and Erlang mixture,  as members. Though this distribution class has been used in reliability and insurance contexts, its applications towards the precipitation seems not found in the current literature. For the purpose of the present article, we closely follow the work of \cite{li2012simulation} where Texas rainfall datasets are analyzed using various single and hybrid models, both with and without the EVT framework. In particular, we use the identical datasets and model them with the PHD and compare with other existing parametric models. Later we also use the global precipitation datasets used in, e.g.,  \cite{papalexiou2012entropy, papalexiou2013extreme} for further analysis as the global datasets exhibit somewhat different characteristics.
 For these datasets we carry out extensive fitting exercises and standard model validations and show that the PHD is a flexible, competitive and well-rounded alternative stochastic model in describing the whole range of precipitation datasets of different shapes. \\
@@ -97,9 +99,7 @@ we compare various existing parametric models in the literature and further intr
 %========================
 \section{Data Sets}
 %========================
-
-
-Let us first describe the datasets to be used throughout the present article. The main data set analysed is United States Historical Climatology Network (USHCN) Daily data set. Raw data set contains daily record of precipitation, snowfall, snow depth, maximum temperature, minumum temperature, and information about flag. Among 48 files of each sontiguous states, we selected Texas which has {\cred 49 stations (correct?)}, following \cite{li2012simulation}. Further, the same data selection criteria were adopted so that all non-zero precipitation values during 1940 and 2009 are included, without taking care of missings. \\
+Let us first describe the datasets to be used throughout the present article. The main data set analysed is United States Historical Climatology Network (USHCN) Daily data set. Raw data set contains daily record of precipitation, snowfall, snow depth, maximum temperature, minumum temperature, and information about flag. Among 48 files of each {\cblue c}ontiguous states, we selected Texas which has {\cred 49 stations (correct?)} {\cblue yes}, following \cite{li2012simulation}. Further, the same data selection criteria were adopted so that all non-zero precipitation values during 1940 and 2009 are included, without taking care of missings. \\
 
 The second set of data, which will be analyzed separately later in this article, is a global precipitation dataset from 
  Daily Global Historical Climatology Network (GHCN-DAILY), which has also been widely used in precipitation analyses in the literature. This dataset includes about 100,000 stations and contains USHCN as its subset. We filtered stations according to \cite{papalexiou2013extreme}, that is, we only included stations that have: (a) record length of over 50 years, (b) percentage of missing values less than 20\%, data assigned with suspicious "quality flags" less than 0.1\%. The screen values of quality flags are two, one with "G"(failed gap check), and another with "X"(failed bound check). For more information about this dataset, see \cite{menne2012overview}. 
@@ -172,7 +172,7 @@ Clearly, these models are ordered in that they become increasingly more flexible
 	\subsection{Multi component models} 
 %-------------------------------------
 
-Further improvement in fitting can be achieved by inserting additional distribution to single component models. In this regard, mixture type distributions were suggested in the literature, including a mixed exponential distribution \citep{wilks1999interannual} and dynamic mixture of gamma and GPD \citep{vrac2007stochastic}. Alternatively, hybrid models could be considered, os which the density is created by stitching two densities at a particular threshold. A hybrid distribution is also known as a composite distribution in the statistical literature.  In recent studies, \cite{furrer2008improving} suggested  a hybrid distribution of gamma and generalized Pareto distribution (GGP in short), and \cite{li2012simulation} proposed a hybrid of exponential and generalized Pareto distribution (EGP). Both of these models take generalized Pareto distribution (GPD) as the upper tail distribution to reflect heavy tail behaviuor of precipitation extremes \citep{koutsoyiannis2004statistics}. Just like single component models, one can create infinitely many different mixture or hybrid models, and it is not feasible to consider all possible candidates. An extensive comparative study of \cite{li2012simulation} shows that the performance of hybrid models defeat the one of mixture models in general {\cred Please revise this sentence. it is too vague to me. make it more detailed.}. Hence, we mainly cover the hybrid models to be compared rather than other mixture distributions. 
+Further improvement in fitting can be achieved by inserting additional distribution to single component models. In this regard, mixture type distributions were suggested in the literature, including a mixed exponential distribution \citep{woolhiser1982stochastic,wilks1999interannual} and dynamic mixture of gamma and GPD \citep{vrac2007stochastic, hundecha2009modeling}. Alternatively, hybrid models could be considered, os which the density is created by stitching two densities at a particular threshold. A hybrid distribution is also known as a composite distribution in the statistical literature.  In recent studies, \cite{furrer2008improving} suggested  a hybrid distribution of gamma and generalized Pareto distribution (GGP in short), and \cite{li2012simulation} proposed a hybrid of exponential and generalized Pareto distribution (EGP). Both of these models take generalized Pareto distribution (GPD) as the upper tail distribution to reflect heavy tail behaviuor of precipitation extremes \citep{koutsoyiannis2004statistics}. Just like single component models, one can create infinitely many different mixture or hybrid models, and it is not feasible to consider all possible candidates. An extensive comparative study of \cite{li2012simulation} \st{shows that the performance of hybrid models defeat the one of mixture models in general} {\cblue found out that the performance of hybrid models surpasses the mixture models considered.} {\cred Please revise this sentence. it is too vague to me. make it more detailed.}. Hence, we mainly cover the hybrid models to be compared rather than other mixture distributions. 
 
 
 \begin{align}
@@ -232,19 +232,19 @@ Model parameters are estimated via maximum likelihood method. Especially for fit
 For GGP model, estimation procedure of by \cite{furrer2008improving} was applied. Also its performance is affected by the choice of threshold value. Too large threshold would estimate its tail short by taking large emphasis on gamma distribution. Otherwise too small threshold set large emphasis on genralized Pareto and estimate its tail heavy. In \cite{li2012simulation}, this model indicated its best performace with threshold $\theta = 3.99$, that is around .Thus we set threshold value used in GGP model moderately as 55\% quantile of each sample and avoid cumbersome optimal threshold selection procedure.
 
 
-%%%
-%------------------------------------- %>% 
-  \subsection{Model comparison}
-%-------------------------------------
+    %%%
+    %------------------------------------- %>% 
+      \subsection{Model comparison}
+    %-------------------------------------
 
 As shown in Figure \ref{fig:single_models}, single component models are not enough to sufficiently depict the entire range of daily precipitation amount. Hence we exclude those models at in depth comparison analysis among models and mainly cover the multi component models in this section; GGP, EGP, and PH model. 
 
 
 \begin{figure}
-  \label{fig:multicomp}
   \centering
   \includegraphics{QQplot_multicomp.pdf}
   \caption{QQ plots of 3 different stations modelled by GGP distribution(left), EGP distribution(middle), and the PH distribution(right)}
+  \label{fig:multicomp}
 \end{figure}
 
 
@@ -256,7 +256,7 @@ Visual model evaluation methods like QQ plot have advantage on concise and drama
 <<goodness of fit>>=
 tab <- fread("results/infotable.csv")
 xtab <- xtable(tab, caption = "Infomation Table", label = "tab:aic")
-print(xtab, booktabs = TRUE, size = "\\tiny")
+print(xtab, booktabs = TRUE, size = "\\tiny", include.rownames = FALSE)
 @
 
 
@@ -274,15 +274,17 @@ aic.best[aic.best == 1] <- "GGP"
 aic.best[aic.best == 2] <- "EGP"
 aic.best[aic.best == 3] <- "PH"
   
-print(xtable(table(aic.best), caption = "Number of selection as best model by AIC", label = "tab:bestaic"), booktabs = TRUE, include.colnames = FALSE)
+print(xtable(table(aic.best),
+  caption = "Number of selection as best model by AIC", label = "tab:bestaic"),
+  booktabs = TRUE, include.colnames = FALSE)
 @
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%
-%-------------------------------------
-  \subsection{Observation on extreme values}
-%-------------------------------------
+    %%%
+    %-------------------------------------
+      \subsection{Observation on extreme values}
+    %-------------------------------------
 
 
 As mentioned earlier, there is a controversy on the tail behavior of daily precipitation data. There are two well known approaches and corresponding statistical methods to investigate the extreme values; block maxima(BM) with generalized extreme value distribution(GEV) and peaks over threshold(POT) with generalized Pareto distribution(GPD). Both of distributions have shape parameter $\xi$, which determines tail behavior of data. GHCN data set, which contains about 20000 stations around the world, is used to figure out thet general tail characteristics of daily precipitation data. Also, to make consistency with foregoing models; GGP and EGP, we take POT-GPD approach on examining tail data. 
@@ -291,10 +293,10 @@ Then it becomes contentious issue that how to define the extreme values. Some co
 
 
 \begin{figure}
-  \label{fig:empirical_xi}
   \centering
   \includegraphics{dist_xi.pdf}
   \caption{Empirical distribution of $\hat{\xi}$ and fitted normal curve. $\hat{\xi}$ is estimated from each of 19328 stations of GHCN data set.}
+  \label{fig:empirical_xi}
 \end{figure}
 
 
@@ -302,41 +304,73 @@ In the extreme value theory(EVT), the tail thickness of data is determined by th
 
 Phase-type distribution is a mixture of several gamma distributions and one exponential distribution. Thus its tail behavior follows exponential tail theoretically. The fundamental characteristic of extreme value of daily precipitation data is still arguable, like comparable fitting results of Figure \ref{fig:multicomp}. More precise research on extreme values is needed to figure out that which kind of tail assumption is more appropriate with precipitaion data. 
 
-Some of methods for testing goodess of fit like Kolmogorov-Smirnov(KS), Cramer von Mises(CvM), and Anderson-Darling(AD) test include a difference between empirical distribution function $F_n$ and model distribution fuction $\hat{F}$. Similarly, we take quantile function based approach that calculates difference between sample quantile and theoretical quantile. We adopt simple statistic $Q(\eta)$ as a quantile based model evaluation method. 
 
+<<qm.list, cache=TRUE>>=
+ids = c(2, 5, 9, 11, 15, 24, 31, 44)
+quantmatch <- function(q = 0.9, ids = c(2, 5, 9, 11, 15, 24, 31, 44)) {
 
-\begin{align} 
-  \label{eq:quantile_match}
-  Q(\eta) &= \sum_{i:x_i \geq \eta}^n (q_i - \hat{q}_i)^2, \quad \eta \in [min(x_i), max(x_i)] \\ 
-  & \text{$n$ : sample record length, $q_i$ : $i^{th}$ sample quantile, $\hat{q}_i$ : $i^{th}$ theoretical quantile} \nonumber
-\end{align}
+  mat <- t(sapply(ids, function(x) {
+    
+    qmat <- fread(paste("results/qmat.", x, ".csv", sep = ""))
+    
+    qmat %>% filter(., y >= quantile(y, q)) %>% select(., contains(".sq")) %>%
+      colSums() / nrow(qmat) 
+    
+  })) %>% data.frame()
+  
+  mat
+}
 
+qmlist <- sapply(c(0.9, 0.95, 0.98), quantmatch) %>% do.call("cbind", .)
+qmlist <- data.frame(paste("ID", ids, sep = ""), qmlist)
+colnames(qmlist) <- c("ID", rep(c("GGP", "EGP", "PH"), 3))
 
-In the case of setting $\eta = min(x_i)$, $Q(\eta)$ represents model performance for the entire range of data. By taking $\eta$ as 90\%, 95\%, or 98\% sample quantile, we can concentrate on modelling extreme values.
+cmnd <- c('& $\\eta$ = 0.9 & & & $\\eta$ = 0.95 & & & $\\eta$ = 0.98 \\\\\n\\toprule\n' )
+xtab <-xtable(qmlist, label = "tab:qmatch",
+  caption = "Mean of square qunatile difference with each value of $\\eta$ equals to 0.9, 
+  0.95, 0.98") 
 
-
-<<quantile matching>>=
-
-print(xtable(table(aic.best), caption = "Number of selection as best model by AIC", label = "tab:quantmatch"), booktabs = TRUE, include.colnames = FALSE)
+print(xtab, 
+  include.rownames = FALSE,
+  add.to.row = list(pos=list(-1),
+    command = cmnd),
+  booktabs = TRUE)
 @
+
+
+Some methods testing goodess of fit like Kolmogorov-Smirnov(KS), Cramer von Mises(CvM), and Anderson-Darling(AD) statistic include a term of difference between empirical distribution function $F_n$ and model distribution fuction $\hat{F}$. Similarly, we exploit some statistic $Q(\eta)$ based on quantile function $q$, which is simply the inverse of distribution function $F$.
+
+
+\begin{equation} 
+  \label{eq:quantile_match}
+  Q(\eta) &= \frac {\sum_{i:q_i \geq \eta}^n (q_i - \hat{q}_i)^2} {n}, \quad \eta \in [0, 1] \\ 
+\end{equation}
+$n$ : sample record length, $q_i$ : $i^{th}$ sample quantile, $\hat{q}_i$ : $i^{th}$ theoretical quantile
+
+
+This approach is really straightforward way to evaluate each model with given sample. As we take $\eta$ of $min(x_i)$, $Q(\eta)$ represents model performance for the entire range of data. Then, by increasing a value of $\eta$ close to $1$, $Q(\eta)$ measures performance of model on extreme part of data. Tail performances of each models, GGP, EGP, and PH are evaluated by $Q(\eta)$ with commonly used tail indicating probabilty 0.9, 0.95 and 0.98 on Table \ref{tab:qmatch}. 
+
+Because $Q(\eta)$ is sort of mean squared error, the smaller is the better. Among 8 stations on table, except station ID2 and ID44, PH model defeats other models. Even with ID2 and ID44, PH model takes second placeds at least. We can find some tendency that the margin between PH model and others getting smaller as $\eta$ increases. Such phenomena occur far more drastically with low value of $\eta$. This means even we would not realize the difference of fitting performances among each models in visual comparison like Figure \ref{fig:multicomp}, PH distribution can model body part more accurately. 
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%%
-%-------------------------------------
-  \subsection{Distinct instance}
-%-------------------------------------
+    %%%
+    %-------------------------------------
+      \subsection{Distinct instance}
+    %-------------------------------------
 
 
 In the research of \cite{papalexiou2012entropy}, wordwide GHCN data set was analyzed to figure out its shape of empirical distribution and tail behavior. To capture the shape characteristics of each sample, L-moments ratio was used. A typical L-moments ratio diagram is made with L-skewness versus L-kurtosis, but with precipitation data, but we prefer L-varaiation versus L-skewness as \cite{papalexiou2012entropy} done before. As a result two distinct shapes were observed called J-shaped and bell-shape distriution. A typical type of parametric model having J-shape distribution is exponential model. The level of J-shaped feature could be judged visually by high peak and steepness around zero; a steeper, a more J-shaped. This kind of empirical distribution is usual case of precipitation data. But bell-shape distributions is well known with noraml distribution. Though, in this case we have non-negative and right-skewed random variable, thus we say it has bell-shaped distribution if it has such shape on the body part of the distribution, like gamma distribtion with its shape parameter greater than one. 
 
 
 \begin{figure}
-  \label{fig:lmrd}
   \centering
-  \includegraphics{lmrd.pdf}
+  \includegraphics[width=15cm]{lmrd.pdf}
   \caption{L-variation vs. L-skewness plot}
+  \label{fig:lmrd}
 \end{figure}
 
 
@@ -365,6 +399,42 @@ Especially for EGP model, it has fundamental defect on modelling bell-shaped dat
 
 
 In Figure \ref{fig:qq_bell}, unlike USHCN Texas samples, body parts of GGP and EGP QQ plot are under the 45 \degree line. PH model, however, still performs well with bell-shaped sample on both body and tail part. Such strength comes from flexible mixing procedure of PH distribution. This result means PH model can be the generally accepted model for daily precipitation data including both J-shaped and bell-shaped distribution. 
+
+
+
+    %%%
+    %-------------------------------------
+      \subsection{Model expansion on dry days}
+    %-------------------------------------
+
+
+Remarkably, phase-type distribution even can model data including zeros. From {\cblue density function of phase-type distribution should be here}, the originial domian of phase-type distribution only permits strictly positive values. Recall that the concept of phase-type distribution measures abosorption time going through Markov process with initial probability vector $\alpha$ and transition matrix $T$ and constrant for $\alpha$ to satisfy $\alpha \boldsymbol{1} = 1$. By simply adding extra parameter $p$ indicating non-zero probabilty to probabilty vector $\alpha$, phase-type distribution can be a comprehensive stochastic rainfall generator. Estimation process for phase-type distribution is same as before, only with strictly postive values, then just to multiplty non-zero probability to $\alpha$, but Markov trasition matrix $T$ does not change.
+
+
+\begin{equation}
+  \alpha_p = \alpha (1 - \frac{\sum_{i = 1}^n I(x_i = 0)} {n}) \\
+  \label{eq:alpha_p}
+\end{equation}
+
+
+Since we have used a special case of PH distiribution called Coxian distribution {\cblue referecing Coxian stuff here}, $T$ is only parameter to be estimated. To cover zero values, $\alpha_p$ is estimated with number of zero records in sample but $T$ is still estimated only with non-zero records. For instance, in Fort Stockton, represented by ID24 of USHCN Texas data set, there were 20422 dry days of 23443 total days recorded from 1940 to 2009. Then we can say that a rainfall probabilty of Fort Stockton is 12.88\% in average, and modify the probability vector $\alpha$ into $\alpha_{p}$.
+
+
+\begin{equation}
+  \alpha = \begin{pmatrix} 1 \\ 0 \\ 0 \end{pmatrix},
+  \quad
+  \hat{\alpha}_p = \begin{pmatrix} 0.1288 \\ 0 \\ 0 \end{pmatrix},
+  \quad
+  \hat{T} = 
+    \begin{pmatrix}
+      -0.5589 & 0.2713 & 0 \\
+      0 & -0.1197 & 0.0161 \\
+      0 & 0 & - 0.0505
+    \end{pmatrix} 
+  \label{eq:estmates_ID24}
+\end{equation}
+
+
 
 
 %%%

@@ -140,9 +140,13 @@ EMpht <-
     
     ## Step 1. preprocessing target vector
     
+    nonzero.vec <- vec[vec != 0]
+    nonzero.rate <- length(nonzero.vec) / length(vec) 
+    
     # log tranform
-    if(logPH) y <- log(vec)
-    else y <- vec
+    if(logPH) y <- log(nonzero.vec)
+    else y <- nonzero.vec
+    
     # shifting constant
     if(min(y) < 0) sh <- abs(min(y)) 
     else sh <- 0 
@@ -196,7 +200,7 @@ EMpht <-
     
     # return parameters 
     fit <- list(data = vec, dist.type = dists[type,], n.iter = as.numeric(iter),
-      alpha = pi, T = Q, c = sh, log.trans = logPH) 
+      alpha = pi * nonzero.rate, T = Q, c = sh, log.trans = logPH) 
     
     if(curve.fit) ph.curvefit(fit, ...)
     
@@ -890,7 +894,7 @@ by_station <-
   # insert a positive integer from 1 to 49 corresponding to station ID number needed 
   # flattening 
   
-  function(ID, in.mm = TRUE, flat = FALSE) {
+  function(ID, including.zeros = FALSE, in.mm = TRUE, flat = FALSE) {
     
     id.value <- 
       tidy.ushcn.tx %>% select(COOP_ID) %>% unique() %>% slice(ID) %>% as.integer
@@ -899,7 +903,9 @@ by_station <-
     y <- 
       tidy.ushcn.tx %>% filter(as.integer(COOP_ID) == id.value) %>% 
       select(-c(COOP_ID, YEAR, MONTH)) %>% c() %>% unlist(., use.names = F) %>%
-      subset(!(is.na(.)) & . != 0)
+      subset(!(is.na(.)))
+    
+    if(!including.zeros) y %<>% subset(. != 0)
     
     if (flat) v <- flat(y) 
     else v <- y 
