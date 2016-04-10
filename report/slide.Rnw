@@ -39,8 +39,8 @@
  }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
-\usetheme{CambridgeUS}
 \usecolortheme{default}
+\usetheme{Amsterdam}
 
 \makeatother
 
@@ -74,9 +74,15 @@ load("data/precedent.RData")
 %========================
 
 \part{Main Part}
-\section{}
 
 
+%%%
+%========================
+\section{Introduction}
+%========================
+
+
+%------------------------
 \frame{ 
   \frametitle{Introduction} 
   
@@ -122,7 +128,9 @@ load("data/precedent.RData")
     \item Used by \cite{li2012simulation}.
     \item 49 stations across the Texas. 
   \end{itemize}
-  
+
+  \setlength\tabcolsep{3pt}  % default value: 6pt
+   
   <<sample summary, warning=FALSE>>=
   summary_stations <- sapply(1:49, function(x) {
   
@@ -216,7 +224,7 @@ load("data/precedent.RData")
 
 \frame{
   \frametitle{Existing Models : Single-Component Models}
-  
+
   <<single models, warning=FALSE, fig.height=4>>=
   layout(matrix(1:3, ncol = 3))
   generalQQplot(y, model = "exp gamma kappa")
@@ -287,34 +295,61 @@ load("data/precedent.RData")
 %------------------------
 
 \frame{
-  \frametitle{Phase-type Distribution(PHD)}
+  \frametitle{Phase-type Distribution(PHD) \footnote{introduced by \cite{neuts1974probability}}}
   \begin{itemize}
-    \item The phase-type(PH) distribution was introduced by \cite{neuts1974probability}
-    \item The phase-type distribution is the distribution of absorption time of Markov process with probability vector $(\alpha_0, \boldsymbol{\alpha})$ and transition rate matrix, 
-    \begin{equation}
-      Q = \begin{pmatrix}
-            T & t \\
-            \pmb{0} & 0 
-          \end{pmatrix},
-        \quad 
-        t = -T\pmb{1}, 
-    \end{equation}
+    \item The phase-type distribution is defined as the distribution of the time until absorption in a continuous Markov chain with absorbing state, denoted by $PH(\alpha, T)$.
 
-  \end{itemize}
+    \item Consider Markov chain with a state space $\{1, \dotsm, p, p+1\}$ with initial vector $(\alpha, 0)$, $\alpha \boldsymbol{1} = 1$, and also with transition rate matrix, 
+    \begin{itemize}
+      \begin{equation}
+        Q = \begin{pmatrix}
+              T & t \\
+              \pmb{0} & 0 
+            \end{pmatrix},
+          \quad 
+          t = -T\pmb{1}, 
+      \end{equation}
+    \end{itemize}
 
+    \item Where $T$ is a $p\;x\;p$ square matrix and $p+1$ state indicates aborbing state. 
 
-
-  \begin{align}
-    F(x) &= 1 - \alpha e^{Tx} \boldsymbol{1}, \quad x > 0, \\
-    f(x) &= \alpha e^{Tx} t, \quad x > 0
-  \end{align}
-
-  \begin{itemize}
-    \item Its quantile function cannot be expressed in closed form.
+    \item Its distribution function and density function is given as,   
+    \begin{itemize}
+      \begin{align}
+        F(x) &= 1 - \alpha e^{Tx} \boldsymbol{1}, \quad x > 0, \\
+        f(x) &= \alpha e^{Tx} t, \quad x > 0
+      \end{align}
+    \end{itemize}
+  
+    \item Its quantile function cannot be obtained in closed form.
   \end{itemize}
 
 }
 
+
+%------------------------
+
+\frame{
+  \frametitle{Phase-type Distribution(PHD)}
+  \begin{itemize}
+    
+    
+    \item General phase-type distribution with $m$ phases includes $m^2 + m$ parameters. ($m^2$ from $T$, $m$ from $\alpha$)
+
+    \item Phase-type distribution includes several types of distributions with parameters constraints and we could control model complexity by adopting particular limited distribution. 
+
+    \begin{enumerate}
+      \item Exponenetial and exponential mixture 
+      \item Erlang and Erlang mixture
+      \item Coxian and generalized Coxian
+      \item ..., etc.
+    \end{enumerate}
+
+    \item EM algorithm for phase-type distribution called EMphat introduced by \cite{asmussen1996fitting} is used for parameter estimation.\footnote{C script for EMpht is available at \url{http://home.math.au.dk/asmus/pspapers.html}}
+
+  \end{itemize}
+
+}
 
 %------------------------
 
@@ -322,33 +357,34 @@ load("data/precedent.RData")
   \frametitle{Special Cases of PHD}
   \begin{itemize}
     \item Exponential \\
-      The simplest case of PHD is exponential distibution with PHD parameters $T = -\lambda, \alpha = 1$. 
+      The simplest case of phase-type distribution is the exponential distibution with PHD parameters $T = -\lambda, \alpha = 1$. 
 
-    \item Erlang 
-      \begin{align}
-        T &=  \nonumber \\
-        \alpha &= (1,0,\dotsc,0), \nonumber
-      \end{align}
+    \item Erlang ($m$ parameters) 
+      \begin{equation}
+        T = \begin{bmatrix} 
+              -\lambda & \lambda & 0 & \cdots & 0 \\
+              0 & -\lambda & \lambda & \cdots & 0 \\
+              \vdots & \vdots & \ddots & & \vdots \\
+              0 & 0 & \cdots & & -\lambda
+             \end{bmatrix}, \quad
+        \alpha = (1,0,\dotsc,0), \nonumber
+      \end{equation}
 
-    \item Coxian  
-      \begin{align}
-        T &=  \nonumber \\
-        \alpha &= (1,0,\dotsc,0), \nonumber
-      \end{align}
+    \item Coxian ($2m - 1$ parameters)
+      \begin{equation}
+        T = \begin{bmatrix} 
+              -\lambda_1 & p_1\lambda & 0 & \cdots & 0 \\
+              0 & -\lambda_2 & p_2\lambda_2 & \cdots & 0 \\
+              \vdots & \vdots & \ddots & & \vdots \\
+              0 & 0 & \cdots & & -\lambda_m
+             \end{bmatrix}, \quad
+        \alpha = (1,0,\dotsc,0), \nonumber
+      \end{equation}
   \end{itemize}  
 
 }
 
 
-%------------------------
-
-\frame{
-  \frametitle{Parameter Estimation for PHD}
-  \begin{itemize}
-    \item \cite{asmussen1996fitting} introduced EM algorithm for fitting phase-type distribution called EMpht.
-  \end{itemize}
-
-}
 
 
 %%%
@@ -422,25 +458,26 @@ load("data/precedent.RData")
   \frametitle{On Tail Behavior}
 
   \begin{itemize}
-    \item In practice, extreme rainfall cases are mainly concerned because of deluge, flood and so on. 
     \item From previous section, hybrid models adopt GPD as their tail distribution to reflect heavy tail behavior of daily precipitation. 
     \item Even though \cite{koutsoyiannis2004statistics} showed heavy tail properties of daily precipitation, some researches like \cite{booij2002extreme, park2011changes} used exponentially decaying distributions. 
     \item Phase-type distribution has exponentail tail mathematically, but it could explain much more extreme values rather than single component exponential tail distributions like exponential, gamma, or Weibull. 
     \item To evalutate model performance on extreme part, mean of square quantile error, denoted by $Q(\eta)$, is used.
   \end{itemize}
 
-  \begin{align} 
+  \begin{gather} 
     \label{eq:quantile_match}
-    & Q(\eta) = \frac {\sum_{i:q_i \geq \eta}^n (q_i - \hat{q}_i)^2} {n}, \quad \eta \in [0, 1] \\ 
-    & \text{$n$ : sample record length, $q_i$ : $i^{th}$ sample quantile, $\hat{q}_i$ : $i^{th}$ theoretical quantile} \nonumber
-  \end{align}
+    Q(\eta) = \frac {\sum_{i:q_i \geq \eta}^n (q_i - \hat{q}_i)^2} {n}, \quad \eta \in [0, 1] \\ 
+    \text{$n$ : sample record length, $q_i$ : $i^{th}$ sample quantile, $\hat{q}_i$ : $i^{th}$ theoretical quantile} \nonumber
+  \end{gather}
 }
 
 %------------------------
 
 \frame{
   \frametitle{On Tail Behavior}
-
+  
+  \setlength\tabcolsep{4pt}  % default value: 6pt
+ 
   <<qm.list, cache=TRUE>>=
   ids = c(2, 5, 9, 11, 15, 24, 31, 44)
   quantmatch <- function(q = 0.9, ids = c(2, 5, 9, 11, 15, 24, 31, 44)) {
@@ -517,6 +554,8 @@ load("data/precedent.RData")
   @
   
 }
+
+
 %------------------------
 
 \frame{
@@ -537,6 +576,23 @@ load("data/precedent.RData")
 
 }
 
+%%%
+%========================
+\section{Conclusion}
+%========================
+
+
+%------------------------
+
+\frame{
+  \frametitle{Conclusion}
+  \begin{enumerate}
+    \item Among various approaches to model daily precipitation, PHD shows great performace in general.
+    \item Also, even though PHD has exponentially decaying tail, PHD appropriately caputures tail behavior of daily precipitation.
+    \item To be used as broadly accepted precipitation model, PHD surpasses other models with flexibility on fitting body part of distribution. 
+  \end{enumerate}
+}
+
 
 
 %%%
@@ -549,6 +605,17 @@ load("data/precedent.RData")
 \bibliographystyle{apalike}
 %following selects the reference bib file
 \bibliography{myrefs}
-
+% make bibliography entries smaller
+\renewcommand\bibfont{\scriptsize}
+% If you have more than one page of references, you want to tell beamer
+% to put the continuation section label from the second slide onwards
+\setbeamertemplate{frametitle continuation}[from second]
+% Now get rid of all the colours
+\setbeamercolor*{bibliography entry title}{fg=black}
+\setbeamercolor*{bibliography entry author}{fg=black}
+\setbeamercolor*{bibliography entry location}{fg=black}
+\setbeamercolor*{bibliography entry note}{fg=black}
+% and kill the abominable icon
+\setbeamertemplate{bibliography item}{}
 
 \end{document}
