@@ -341,12 +341,11 @@ print(xtab,
 Some methods testing goodess of fit like Kolmogorov-Smirnov(KS), Cramer von Mises(CvM), and Anderson-Darling(AD) statistic include a term of difference between empirical distribution function $F_n$ and model distribution fuction $\hat{F}$. Similarly, we exploit some statistic $Q(\eta)$ based on quantile function $q$, which is simply the inverse of distribution function $F$.
 
 
-\begin{equation} 
+\begin{gather} 
   \label{eq:quantile_match}
-  Q(\eta) &= \frac {\sum_{i:q_i \geq \eta}^n (q_i - \hat{q}_i)^2} {n}, \quad \eta \in [0, 1] \\ 
-\end{equation}
-$n$ : sample record length, $q_i$ : $i^{th}$ sample quantile, $\hat{q}_i$ : $i^{th}$ theoretical quantile
-
+  Q(\eta) = \frac {\sum_{i:q_i \geq \eta}^n (q_i - \hat{q}_i)^2} {n}, \quad \eta \in [0, 1] \\ 
+  \text{$n$ : sample record length, $q_i$ : $i^{th}$ sample quantile, $\hat{q}_i$ : $i^{th}$ theoretical quantile} \nonumber
+\end{gather}
 
 This approach is really straightforward way to evaluate each model with given sample. As we take $\eta$ of $min(x_i)$, $Q(\eta)$ represents model performance for the entire range of data. Then, by increasing a value of $\eta$ close to $1$, $Q(\eta)$ measures performance of model on extreme part of data. Tail performances of each models, GGP, EGP, and PH are evaluated by $Q(\eta)$ with commonly used tail indicating probabilty 0.9, 0.95 and 0.98 on Table \ref{tab:qmatch}. 
 
